@@ -1,0 +1,190 @@
+"""Aggregations for the daily dashboard (module 1) and the smart priority
+system (module 9): "What should I work on today? Am I overloaded? Which
+projects need attention?"
+"""
+
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Optional
+
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
+
+from apps.projects.models import Project
+from apps.projects.services import current_month_range, logged_hours_for_project
+from apps.tasks.models import Task
+from apps.timetracking.models import TimeEntry
+
+# --- Smart priority scoring (module 9) ----------------------------------
+# Weighted so that a task on a high-priority, high-revenue, overdue project
+# always outranks a low-stakes one — tune the constants as your business
+# priorities shift, they are intentionally not hard-coded elsewhere.
+
+PROJECT_PRIORITY_POINTS = {"critical": 40, "high": 30, "medium": 15, "low": 5}
+TASK_PRIORITY_POINTS = {"urgent": 40, "high": 25, "medium": 10, "low": 0}
+
+
+def _deadline_points(task: Task, today) -> int:
+    if not task.deadline:
+        return 0
+    days = (task.deadline - today).days
+    if days < 0:
+        return 50  # overdue
+    if days == 0:
+        return 35
+    if days <= 2:
+        return 20
+    if days <= 7:
+        return 8
+    return 0
+
+
+def _revenue_points(project: Project) -> int:
+    amount = project.revenue_amount
+    if not amount:
+        return 0
+    # Every ~5,000,000 toman of monthly revenue adds a point, capped so one
+    # very large retainer can't drown out everything else.
+    return min(int(amount / Decimal(5_000_000)), 20)
+
+
+def task_priority_score(task: Task, today=None) -> int:
+    today = today or timezone.localdate()
+    return (
+        PROJECT_PRIORITY_POINTS.get(task.project.priority, 0)
+        + TASK_PRIORITY_POINTS.get(task.priority, 0)
+        + _deadline_points(task, today)
+        + _revenue_points(task.project)
+    )
+
+
+def recommended_tasks(user, limit: int = 10):
+    today = timezone.localdate()
+    tasks = list(
+        Task.objects.filter(project__owner=user)
+        .exclude(status=Task.Status.DONE)
+        .select_related("project", "category")
+    )
+    scored = [(task_priority_score(t, today), t) for t in tasks]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [task for _score, task in scored[:limit]], {t.id: s for s, t in scored}
+
+
+# --- Capacity planning (module 8) ---------------------------------------
+
+
+@dataclass
+class CapacitySummary:
+    available_hours: Decimal
+    allocated_hours: Decimal
+    consumed_hours: Decimal
+    remaining_hours: Decimal
+    is_overloaded: bool
+    overloaded_by: Decimal
+
+
+def capacity_summary(user) -> CapacitySummary:
+    active_projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE)
+
+    allocated = Decimal("0")
+    for project in active_projects:
+        hours = project.estimated_monthly_hours
+        if hours is None:
+            hours = project.capacity_hours or Decimal("0")
+        allocated += hours
+
+    start, end = current_month_range()
+    consumed = (
+        TimeEntry.objects.filter(user=user, date__gte=start, date__lte=end).aggregate(
+            total=Sum("duration_hours")
+        )["total"]
+        or Decimal("0")
+    )
+
+    available = user.monthly_capacity_hours or Decimal("0")
+    remaining = available - consumed
+    overloaded_by = max(allocated - available, Decimal("0"))
+
+    return CapacitySummary(
+        available_hours=available,
+        allocated_hours=allocated,
+        consumed_hours=consumed,
+        remaining_hours=remaining,
+        is_overloaded=overloaded_by > 0,
+        overloaded_by=overloaded_by,
+    )
+
+
+# --- Revenue (module 1) --------------------------------------------------
+
+
+@dataclass
+class RevenueSummary:
+    fixed_and_retainer: Decimal
+    hourly: Decimal
+    total: Decimal
+
+
+def revenue_summary(user) -> RevenueSummary:
+    active_projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE)
+
+    non_hourly_total = (
+        active_projects.exclude(billing_type=Project.BillingType.HOURLY).aggregate(
+            total=Sum("budget")
+        )["total"]
+        or Decimal("0")
+    )
+    hourly_total = (
+        active_projects.filter(billing_type=Project.BillingType.HOURLY).aggregate(
+            total=Sum("monthly_revenue_target")
+        )["total"]
+        or Decimal("0")
+    )
+
+    return RevenueSummary(
+        fixed_and_retainer=non_hourly_total,
+        hourly=hourly_total,
+        total=non_hourly_total + hourly_total,
+    )
+
+
+# --- Project health (module 1 + 9) ---------------------------------------
+
+
+def project_health(user):
+    """Per active project: task completion rate + logged-hours vs. estimate,
+    as a rough 0-100 health score ("Client A: 80%")."""
+
+    projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE).select_related(
+        "client"
+    )
+    results = []
+    for project in projects:
+        task_stats = project.tasks.aggregate(
+            total=Count("id"),
+            done=Count("id", filter=Q(status=Task.Status.DONE)),
+            overdue=Count(
+                "id",
+                filter=Q(deadline__lt=timezone.localdate()) & ~Q(status=Task.Status.DONE),
+            ),
+        )
+        total = task_stats["total"] or 0
+        done = task_stats["done"] or 0
+        completion_rate = round(100 * done / total) if total else 100
+
+        # Overdue tasks drag the score down; this keeps a project with no
+        # tasks yet from misleadingly showing 100%.
+        penalty = min(task_stats["overdue"] * 10, 40)
+        score = max(completion_rate - penalty, 0) if total else 100
+
+        results.append(
+            {
+                "project_id": project.id,
+                "project_name": project.name,
+                "client_name": project.client.name,
+                "completion_rate": completion_rate,
+                "overdue_tasks": task_stats["overdue"],
+                "health_score": score,
+            }
+        )
+    return sorted(results, key=lambda r: r["health_score"])

@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Vazirmatn', 'Segoe UI', Tahoma, ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: 'ss01';
+}
+
+/* Numbers read better left-to-right even inside an RTL page. */
+.ltr-nums {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

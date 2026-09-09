@@ -1,0 +1,176 @@
+export type ClientStatus = 'lead' | 'active' | 'paused' | 'lost'
+
+export interface Client {
+  id: number
+  name: string
+  company_name: string
+  phone: string
+  email: string
+  website: string
+  industry: string
+  notes: string
+  status: ClientStatus
+  active_projects_count: number
+  created_at: string
+  updated_at: string
+}
+
+export type ProjectType =
+  | 'seo_monthly'
+  | 'website_design'
+  | 'ecommerce_setup'
+  | 'seo_audit'
+  | 'consulting'
+  | 'content_marketing'
+
+export type BillingType = 'fixed' | 'hourly' | 'retainer' | 'hybrid'
+
+export type ProjectStatus =
+  | 'backlog'
+  | 'planning'
+  | 'active'
+  | 'review'
+  | 'completed'
+  | 'paused'
+  | 'cancelled'
+
+export type Priority = 'low' | 'medium' | 'high' | 'critical'
+
+export interface ProjectFinancials {
+  revenue_amount: string | null
+  capacity_hours: string | null
+  estimated_monthly_hours: string | null
+  logged_hours: string
+  variance_hours: string | null
+  effective_hourly_rate: string | null
+  profitability_status: 'profitable' | 'balanced' | 'low_margin' | 'losing' | 'unknown'
+}
+
+export interface Project {
+  id: number
+  client: number
+  client_name: string
+  name: string
+  website: string
+  project_type: ProjectType
+  billing_type: BillingType
+  start_date: string | null
+  end_date: string | null
+  priority: Priority
+  status: ProjectStatus
+  description: string
+  budget: string | null
+  hourly_rate: string | null
+  monthly_revenue_target: string | null
+  estimated_monthly_hours: string | null
+  financials: ProjectFinancials
+  created_at: string
+  updated_at: string
+}
+
+export type TaskStatus = 'backlog' | 'todo' | 'doing' | 'review' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type Recurrence = 'none' | 'weekly' | 'monthly'
+
+export interface TaskCategory {
+  id: number
+  name: string
+  group: string
+  default_estimated_hours: string | null
+}
+
+export interface Task {
+  id: number
+  project: number
+  project_name: string
+  assignee: number | null
+  category: number | null
+  category_name: string | null
+  title: string
+  description: string
+  priority: TaskPriority
+  status: TaskStatus
+  estimated_hours: string | null
+  actual_hours: string | number
+  deadline: string | null
+  recurrence: Recurrence
+  value_generated: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+  priority_score?: number
+}
+
+export interface TimeEntry {
+  id: number
+  task: number
+  task_title: string
+  project_name: string
+  date: string
+  duration_hours: string
+  started_at: string | null
+  ended_at: string | null
+  notes: string
+  url: string
+  created_at: string
+}
+
+export interface TimerSession {
+  id: number
+  task: number
+  task_title: string
+  started_at: string
+  is_running: boolean
+  accumulated_seconds: number
+  last_resumed_at: string
+  current_seconds: number
+}
+
+export interface CapacitySummary {
+  available_hours: number
+  allocated_hours: number
+  consumed_hours: number
+  remaining_hours: number
+  is_overloaded: boolean
+  overloaded_by: number
+}
+
+export interface RevenueSummary {
+  fixed_and_retainer: number
+  hourly: number
+  total: number
+}
+
+export interface ProjectHealth {
+  project_id: number
+  project_name: string
+  client_name: string
+  completion_rate: number
+  overdue_tasks: number
+  health_score: number
+}
+
+export interface DashboardData {
+  today_tasks: Task[]
+  capacity: CapacitySummary
+  revenue: RevenueSummary
+  project_health: ProjectHealth[]
+}
+
+export interface Paginated<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+export interface Me {
+  id: number
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  role: string
+  monthly_capacity_hours: string
+  working_days_per_month: number
+}
