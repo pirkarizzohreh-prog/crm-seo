@@ -1,3 +1,6 @@
+from calendar import monthrange
+from datetime import date, timedelta
+
 from django.conf import settings
 from django.db import models
 
@@ -144,13 +147,52 @@ class Task(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
+        from django.utils import timezone
+
         # Keep completed_at in sync with status so the activity log/report
         # (module 4 + doc2 section 2) can show "done on this date" without
         # a separate write from the client.
-        if self.status == self.Status.DONE and self.completed_at is None:
-            from django.utils import timezone
-
+        becoming_done = self.status == self.Status.DONE and self.completed_at is None
+        if becoming_done:
             self.completed_at = timezone.now()
         elif self.status != self.Status.DONE:
             self.completed_at = None
         super().save(*args, **kwargs)
+
+        # Routine SEO work ("بررسی سرچ کنسول هر هفته", "گزارش ماهانه", ...)
+        # shouldn't need the strategist to recreate the task by hand every
+        # cycle — the moment a recurring task is finished, queue up its next
+        # occurrence automatically.
+        if becoming_done and self.recurrence != self.Recurrence.NONE:
+            self._create_next_occurrence()
+
+    def _create_next_occurrence(self) -> "Task":
+        from django.utils import timezone
+
+        base_date = self.deadline or timezone.localdate()
+        if self.recurrence == self.Recurrence.WEEKLY:
+            next_deadline = base_date + timedelta(days=7)
+        else:  # MONTHLY
+            next_deadline = _add_one_month(base_date)
+
+        return Task.objects.create(
+            project=self.project,
+            assignee=self.assignee,
+            category=self.category,
+            title=self.title,
+            description=self.description,
+            priority=self.priority,
+            status=self.Status.TODO,
+            estimated_hours=self.estimated_hours,
+            deadline=next_deadline,
+            recurrence=self.recurrence,
+        )
+
+
+def _add_one_month(d):
+    """Add one calendar month to a date, clamping the day if the target
+    month is shorter (e.g. Jan 31 -> Feb 28/29)."""
+    year = d.year + (d.month // 12)
+    month = d.month % 12 + 1
+    day = min(d.day, monthrange(year, month)[1])
+    return date(year, month, day)

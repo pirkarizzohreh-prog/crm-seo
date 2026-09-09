@@ -49,3 +49,30 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_financials(self, obj):
         return ProjectFinancialsSerializer(project_financials(obj)).data
+
+
+class CompletedTaskReportSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    category_name = serializers.CharField(allow_null=True)
+    category_group = serializers.CharField(allow_null=True)
+    completed_at = serializers.DateTimeField()
+    value_generated = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
+
+
+class HoursByCategorySerializer(serializers.Serializer):
+    category_name = serializers.CharField()
+    hours = serializers.DecimalField(max_digits=8, decimal_places=2)
+
+
+class MonthlyReportSerializer(serializers.Serializer):
+    project_id = serializers.IntegerField()
+    project_name = serializers.CharField()
+    period_start = serializers.DateField()
+    period_end = serializers.DateField()
+    completed_tasks = CompletedTaskReportSerializer(many=True)
+    hours_by_category = HoursByCategorySerializer(many=True)
+    total_hours = serializers.DecimalField(max_digits=8, decimal_places=2)
+    total_value_generated = serializers.DecimalField(max_digits=14, decimal_places=2)
+    contract_amount = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
+    task_count = serializers.IntegerField()

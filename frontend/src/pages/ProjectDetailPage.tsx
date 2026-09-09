@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Plus, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
-import { PageHeader } from '../components/Layout'
+import { KeywordsPanel } from '../components/KeywordsPanel'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
+import { MonthlyReportPanel } from '../components/MonthlyReportPanel'
 import { StatCard } from '../components/StatCard'
+import { Tabs } from '../components/Tabs'
 import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
 import {
@@ -15,7 +19,7 @@ import {
   taskStatusColors,
   taskStatusLabels,
 } from '../lib/labels'
-import type { Paginated, Project, Task, TaskCategory, TaskPriority, TaskStatus } from '../types'
+import type { Paginated, Project, Task, TaskCategory, TaskPriority, TaskStatus, TaskTemplate } from '../types'
 
 type TaskForm = Partial<Task>
 
@@ -25,6 +29,8 @@ export function ProjectDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
+  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report'>('tasks')
+  const [applyingTemplate, setApplyingTemplate] = useState(false)
 
   const { data: project } = useQuery<Project>({
     queryKey: ['projects', id],
@@ -61,6 +67,21 @@ export function ProjectDetailPage() {
     onSuccess: invalidateTasks,
   })
 
+  const { data: templates } = useQuery<Paginated<TaskTemplate>>({
+    queryKey: ['task-templates'],
+    queryFn: async () => (await api.get('/tasks/templates/')).data,
+    enabled: applyingTemplate,
+  })
+
+  const applyTemplate = useMutation({
+    mutationFn: (templateId: number) =>
+      api.post(`/projects/${id}/apply-template/`, { template_id: templateId }),
+    onSuccess: () => {
+      invalidateTasks()
+      setApplyingTemplate(false)
+    },
+  })
+
   if (!project) return <p className="text-sm text-slate-500">در حال بارگذاری...</p>
 
   const f = project.financials
@@ -70,22 +91,27 @@ export function ProjectDetailPage() {
     <div>
       <PageHeader
         title={project.name}
+        subtitle={project.client_name}
         actions={
-          <button
-            onClick={() => setEditingTask(emptyTaskForm)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + تسک جدید
-          </button>
+          tab === 'tasks' && (
+            <div className="flex gap-2">
+              <button onClick={() => setApplyingTemplate(true)} className="btn-secondary">
+                <LayoutTemplate className="h-4 w-4" /> اعمال قالب
+              </button>
+              <button onClick={() => setEditingTask(emptyTaskForm)} className="btn-primary">
+                <Plus className="h-4 w-4" /> تسک جدید
+              </button>
+            </div>
+          )
         }
       />
-      <div className="mb-6 text-sm text-slate-500">{project.client_name}</div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="درآمد ماهانه" value={formatToman(f.revenue_amount)} />
+        <StatCard title="درآمد ماهانه" value={formatToman(f.revenue_amount)} icon={Coins} />
         <StatCard
           title="ساعت خریداری‌شده توسط قرارداد"
           value={formatHours(f.capacity_hours)}
+          icon={TrendingUp}
           subtitle={
             f.variance_hours !== null
               ? Number(f.variance_hours) >= 0
@@ -95,62 +121,77 @@ export function ProjectDetailPage() {
           }
           tone={f.variance_hours !== null && Number(f.variance_hours) < 0 ? 'danger' : 'default'}
         />
-        <StatCard title="ساعت ثبت‌شده این ماه" value={formatHours(f.logged_hours)} />
+        <StatCard title="ساعت ثبت‌شده این ماه" value={formatHours(f.logged_hours)} icon={ClipboardList} />
         <StatCard
           title="وضعیت سودآوری"
-          value={<Badge label={profitabilityLabels[f.profitability_status]} className={profitabilityColors[f.profitability_status]} />}
+          icon={Gauge}
+          value={
+            <Badge
+              label={profitabilityLabels[f.profitability_status]}
+              className={profitabilityColors[f.profitability_status]}
+            />
+          }
           subtitle={f.effective_hourly_rate ? `نرخ واقعی: ${formatToman(f.effective_hourly_rate)}/ساعت` : undefined}
         />
       </div>
 
-      <h2 className="mb-3 text-sm font-semibold text-slate-700">تسک‌ها ({taskList.length})</h2>
-      {taskList.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-          هنوز تسکی برای این پروژه ثبت نشده است.
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {taskList.map((task) => (
-            <li
-              key={task.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-slate-900">{task.title}</span>
-                  <Badge label={priorityLabels[task.priority]} className={priorityColors[task.priority]} />
-                  {task.category_name && (
-                    <Badge label={task.category_name} className="bg-slate-100 text-slate-600" />
-                  )}
+      <Tabs
+        tabs={[
+          { key: 'tasks', label: `تسک‌ها (${taskList.length})` },
+          { key: 'keywords', label: 'کلمات کلیدی' },
+          { key: 'report', label: 'گزارش ماهانه' },
+        ]}
+        active={tab}
+        onChange={(k) => setTab(k as typeof tab)}
+      />
+
+      {tab === 'tasks' &&
+        (taskList.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="هنوز تسکی برای این پروژه ثبت نشده است." />
+        ) : (
+          <ul className="space-y-2">
+            {taskList.map((task) => (
+              <li key={task.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-slate-900">{task.title}</span>
+                    <Badge label={priorityLabels[task.priority]} className={priorityColors[task.priority]} />
+                    {task.category_name && (
+                      <Badge label={task.category_name} className="bg-slate-100 text-slate-600" />
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)} تخمینی
+                    {task.deadline && ` · موعد: ${task.deadline}`}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)} تخمینی
-                  {task.deadline && ` · موعد: ${task.deadline}`}
+                <div className="flex shrink-0 items-center gap-2">
+                  <select
+                    value={task.status}
+                    onChange={(e) => setStatus.mutate({ taskId: task.id, status: e.target.value as TaskStatus })}
+                    className={`rounded-md border-0 px-2 py-1 text-xs font-medium ${taskStatusColors[task.status]}`}
+                  >
+                    {Object.entries(taskStatusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setEditingTask(task)}
+                    className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    title="ویرایش"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
                 </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <select
-                  value={task.status}
-                  onChange={(e) => setStatus.mutate({ taskId: task.id, status: e.target.value as TaskStatus })}
-                  className={`rounded-md border-0 px-2 py-1 text-xs font-medium ${taskStatusColors[task.status]}`}
-                >
-                  {Object.entries(taskStatusLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setEditingTask(task)}
-                  className="text-xs text-slate-400 hover:text-slate-700"
-                >
-                  ویرایش
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        ))}
+
+      {tab === 'keywords' && <KeywordsPanel projectId={Number(id)} />}
+      {tab === 'report' && <MonthlyReportPanel projectId={Number(id)} />}
 
       {editingTask && (
         <Modal title={editingTask.id ? 'ویرایش تسک' : 'تسک جدید'} onClose={() => setEditingTask(null)}>
@@ -162,17 +203,17 @@ export function ProjectDetailPage() {
             className="space-y-3"
           >
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">عنوان *</label>
+              <label className="field-label">عنوان *</label>
               <input
                 required
                 value={editingTask.title ?? ''}
                 onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">دسته‌بندی</label>
+                <label className="field-label">دسته‌بندی</label>
                 <select
                   value={editingTask.category ?? ''}
                   onChange={(e) =>
@@ -181,7 +222,7 @@ export function ProjectDetailPage() {
                       category: e.target.value ? Number(e.target.value) : null,
                     })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input"
                 >
                   <option value="">بدون دسته</option>
                   {categories?.results.map((c) => (
@@ -192,11 +233,11 @@ export function ProjectDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">اولویت</label>
+                <label className="field-label">اولویت</label>
                 <select
                   value={editingTask.priority ?? 'medium'}
                   onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value as TaskPriority })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input"
                 >
                   {Object.entries(priorityLabels)
                     .filter(([v]) => ['low', 'medium', 'high', 'urgent'].includes(v))
@@ -210,42 +251,94 @@ export function ProjectDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">ساعت تخمینی</label>
+                <label className="field-label">ساعت تخمینی</label>
                 <input
                   type="number"
                   step="0.5"
                   value={editingTask.estimated_hours ?? ''}
                   onChange={(e) => setEditingTask({ ...editingTask, estimated_hours: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">موعد انجام</label>
+                <label className="field-label">موعد انجام</label>
                 <input
                   type="date"
                   value={editingTask.deadline ?? ''}
                   onChange={(e) => setEditingTask({ ...editingTask, deadline: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="field-label">تکرار</label>
+                <select
+                  value={editingTask.recurrence ?? 'none'}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, recurrence: e.target.value as Task['recurrence'] })
+                  }
+                  className="field-input"
+                >
+                  <option value="none">بدون تکرار</option>
+                  <option value="weekly">هفتگی</option>
+                  <option value="monthly">ماهانه</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">ارزش تولیدشده (تومان)</label>
+                <input
+                  type="number"
+                  value={editingTask.value_generated ?? ''}
+                  onChange={(e) => setEditingTask({ ...editingTask, value_generated: e.target.value })}
+                  className="field-input ltr-nums"
                 />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">توضیحات</label>
+              <label className="field-label">توضیحات</label>
               <textarea
                 value={editingTask.description ?? ''}
                 onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
                 rows={2}
               />
             </div>
-            <button
-              type="submit"
-              disabled={saveTask.isPending}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
+            <button type="submit" disabled={saveTask.isPending} className="btn-primary w-full">
               ذخیره
             </button>
           </form>
+        </Modal>
+      )}
+
+      {applyingTemplate && (
+        <Modal title="اعمال قالب تسک" onClose={() => setApplyingTemplate(false)}>
+          {!templates || templates.results.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              هنوز قالبی نساخته‌اید. از صفحه‌ی «قالب‌های تسک» یکی بسازید.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {templates.results.map((tpl) => (
+                <li
+                  key={tpl.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 p-3"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-slate-900">{tpl.name}</div>
+                    <div className="text-xs text-slate-500">{tpl.items.length} تسک</div>
+                  </div>
+                  <button
+                    onClick={() => applyTemplate.mutate(tpl.id)}
+                    disabled={applyTemplate.isPending}
+                    className="btn-secondary !px-3 !py-1.5 text-xs"
+                  >
+                    اعمال
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Modal>
       )}
     </div>

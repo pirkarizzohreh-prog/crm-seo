@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ListChecks, Play } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
-import { PageHeader } from '../components/Layout'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { api } from '../lib/api'
 import { formatHours } from '../lib/format'
 import { priorityColors, priorityLabels, taskStatusColors, taskStatusLabels } from '../lib/labels'
@@ -42,11 +43,7 @@ export function TasksPage() {
       <PageHeader title="همه تسک‌ها" />
 
       <div className="mb-4 flex gap-2">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-        >
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="field-input w-auto">
           <option value="">همه وضعیت‌ها</option>
           {Object.entries(taskStatusLabels).map(([value, label]) => (
             <option key={value} value={value}>
@@ -59,23 +56,18 @@ export function TasksPage() {
       {isLoading ? (
         <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : tasks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-          تسکی یافت نشد.
-        </div>
+        <EmptyState icon={ListChecks} title="تسکی یافت نشد." />
       ) : (
         <ul className="space-y-2">
           {tasks.map((task) => (
-            <li
-              key={task.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-            >
+            <li key={task.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-slate-900">{task.title}</span>
                   <Badge label={priorityLabels[task.priority]} className={priorityColors[task.priority]} />
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
-                  <Link to={`/projects/${task.project}`} className="hover:underline">
+                  <Link to={`/projects/${task.project}`} className="hover:text-brand-600 hover:underline">
                     {task.project_name}
                   </Link>
                   {' · '}
@@ -86,11 +78,8 @@ export function TasksPage() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={() => startTimer.mutate(task.id)}
-                  className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  شروع تایمر
+                <button onClick={() => startTimer.mutate(task.id)} className="btn-secondary !px-2.5 !py-1.5 text-xs">
+                  <Play className="h-3.5 w-3.5" /> شروع تایمر
                 </button>
                 <select
                   value={task.status}

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Pencil, Plus, Trash2, Users2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
-import { PageHeader } from '../components/Layout'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
 import { clientStatusLabels } from '../lib/labels'
@@ -51,11 +52,8 @@ export function ClientsPage() {
       <PageHeader
         title="مشتری‌ها"
         actions={
-          <button
-            onClick={() => setEditing(emptyForm)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + مشتری جدید
+          <button onClick={() => setEditing(emptyForm)} className="btn-primary">
+            <Plus className="h-4 w-4" /> مشتری جدید
           </button>
         }
       />
@@ -63,11 +61,9 @@ export function ClientsPage() {
       {isLoading ? (
         <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : clients.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-          هنوز مشتری‌ای ثبت نشده است.
-        </div>
+        <EmptyState icon={Users2} title="هنوز مشتری‌ای ثبت نشده است." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-start text-xs text-slate-500">
@@ -81,9 +77,9 @@ export function ClientsPage() {
             </thead>
             <tbody>
               {clients.map((client) => (
-                <tr key={client.id} className="border-b border-slate-100 last:border-0">
+                <tr key={client.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
                   <td className="px-4 py-3 font-medium text-slate-900">
-                    <Link to={`/clients/${client.id}`} className="hover:underline">
+                    <Link to={`/clients/${client.id}`} className="hover:text-brand-600 hover:underline">
                       {client.name}
                     </Link>
                   </td>
@@ -98,25 +94,27 @@ export function ClientsPage() {
                       }
                     />
                   </td>
-                  <td className="ltr-nums px-4 py-3 text-slate-600">
-                    {client.active_projects_count}
-                  </td>
+                  <td className="px-4 py-3 text-slate-600">{client.active_projects_count}</td>
                   <td className="px-4 py-3 text-slate-500">{client.phone || client.email || '—'}</td>
                   <td className="px-4 py-3 text-end">
-                    <button
-                      onClick={() => setEditing(client)}
-                      className="ms-2 text-xs text-slate-500 hover:text-slate-900"
-                    >
-                      ویرایش
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('این مشتری حذف شود؟')) remove.mutate(client.id)
-                      }}
-                      className="ms-3 text-xs text-rose-500 hover:text-rose-700"
-                    >
-                      حذف
-                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => setEditing(client)}
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        title="ویرایش"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('این مشتری حذف شود؟')) remove.mutate(client.id)
+                        }}
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        title="حذف"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -135,65 +133,63 @@ export function ClientsPage() {
             className="space-y-3"
           >
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">نام *</label>
+              <label className="field-label">نام *</label>
               <input
                 required
                 value={editing.name ?? ''}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">نام شرکت</label>
+              <label className="field-label">نام شرکت</label>
               <input
                 value={editing.company_name ?? ''}
                 onChange={(e) => setEditing({ ...editing, company_name: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">تلفن</label>
+                <label className="field-label">تلفن</label>
                 <input
                   value={editing.phone ?? ''}
                   onChange={(e) => setEditing({ ...editing, phone: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">ایمیل</label>
+                <label className="field-label">ایمیل</label>
                 <input
                   value={editing.email ?? ''}
                   onChange={(e) => setEditing({ ...editing, email: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input"
                 />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">وب‌سایت</label>
+              <label className="field-label">وب‌سایت</label>
               <input
                 value={editing.website ?? ''}
                 onChange={(e) => setEditing({ ...editing, website: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">حوزه فعالیت</label>
+                <label className="field-label">حوزه فعالیت</label>
                 <input
                   value={editing.industry ?? ''}
                   onChange={(e) => setEditing({ ...editing, industry: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">وضعیت</label>
+                <label className="field-label">وضعیت</label>
                 <select
                   value={editing.status ?? 'active'}
-                  onChange={(e) =>
-                    setEditing({ ...editing, status: e.target.value as ClientStatus })
-                  }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  onChange={(e) => setEditing({ ...editing, status: e.target.value as ClientStatus })}
+                  className="field-input"
                 >
                   {Object.entries(clientStatusLabels).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -204,19 +200,15 @@ export function ClientsPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">یادداشت</label>
+              <label className="field-label">یادداشت</label>
               <textarea
                 value={editing.notes ?? ''}
                 onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
                 rows={3}
               />
             </div>
-            <button
-              type="submit"
-              disabled={save.isPending}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
+            <button type="submit" disabled={save.isPending} className="btn-primary w-full">
               ذخیره
             </button>
           </form>

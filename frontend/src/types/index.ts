@@ -164,6 +164,46 @@ export interface Paginated<T> {
   results: T[]
 }
 
+export interface TaskTemplateItem {
+  id?: number
+  title: string
+  category: number | null
+  estimated_hours: string | null
+  order: number
+}
+
+export interface TaskTemplate {
+  id: number
+  name: string
+  description: string
+  project_type: ProjectType | ''
+  items: TaskTemplateItem[]
+}
+
+export interface KeywordRankHistory {
+  id: number
+  rank: number
+  checked_on: string
+}
+
+export interface Keyword {
+  id: number
+  project: number
+  project_name: string
+  keyword: string
+  url: string
+  current_rank: number | null
+  target_rank: number | null
+  rank_gap: number | null
+  search_volume: number | null
+  difficulty: number | null
+  last_checked: string | null
+  notes: string
+  history: KeywordRankHistory[]
+  created_at: string
+  updated_at: string
+}
+
 export interface Me {
   id: number
   username: string

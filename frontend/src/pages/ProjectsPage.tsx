@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Briefcase, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
-import { PageHeader } from '../components/Layout'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
@@ -59,11 +60,8 @@ export function ProjectsPage() {
       <PageHeader
         title="پروژه‌ها"
         actions={
-          <button
-            onClick={() => setEditing(emptyForm)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + پروژه جدید
+          <button onClick={() => setEditing(emptyForm)} className="btn-primary">
+            <Plus className="h-4 w-4" /> پروژه جدید
           </button>
         }
       />
@@ -72,7 +70,7 @@ export function ProjectsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+          className="field-input w-auto"
         >
           <option value="">همه وضعیت‌ها</option>
           {Object.entries(projectStatusLabels).map(([value, label]) => (
@@ -86,25 +84,21 @@ export function ProjectsPage() {
       {isLoading ? (
         <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : list.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-          پروژه‌ای یافت نشد.
-        </div>
+        <EmptyState icon={Briefcase} title="پروژه‌ای یافت نشد." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((project) => (
-            <div
-              key={project.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-            >
+            <div key={project.id} className="card p-4">
               <div className="mb-1 flex items-start justify-between">
-                <Link to={`/projects/${project.id}`} className="font-medium text-slate-900 hover:underline">
+                <Link to={`/projects/${project.id}`} className="font-medium text-slate-900 hover:text-brand-600 hover:underline">
                   {project.name}
                 </Link>
                 <button
                   onClick={() => setEditing(project)}
-                  className="text-xs text-slate-400 hover:text-slate-700"
+                  className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="ویرایش"
                 >
-                  ویرایش
+                  <Pencil className="h-3.5 w-3.5" />
                 </button>
               </div>
               <div className="mb-2 text-xs text-slate-500">{project.client_name}</div>
@@ -172,21 +166,21 @@ function ProjectFormModal({
       >
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">نام پروژه *</label>
+            <label className="field-label">نام پروژه *</label>
             <input
               required
               value={editing.name ?? ''}
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">مشتری *</label>
+            <label className="field-label">مشتری *</label>
             <select
               required
               value={editing.client ?? ''}
               onChange={(e) => setEditing({ ...editing, client: Number(e.target.value) })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             >
               <option value="" disabled>
                 انتخاب کنید
@@ -202,11 +196,11 @@ function ProjectFormModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">نوع پروژه</label>
+            <label className="field-label">نوع پروژه</label>
             <select
               value={editing.project_type ?? 'seo_monthly'}
               onChange={(e) => setEditing({ ...editing, project_type: e.target.value as ProjectType })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             >
               {Object.entries(projectTypeLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -216,11 +210,11 @@ function ProjectFormModal({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">نوع قرارداد</label>
+            <label className="field-label">نوع قرارداد</label>
             <select
               value={editing.billing_type ?? 'retainer'}
               onChange={(e) => setEditing({ ...editing, billing_type: e.target.value as BillingType })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             >
               {Object.entries(billingTypeLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -233,11 +227,11 @@ function ProjectFormModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">اولویت</label>
+            <label className="field-label">اولویت</label>
             <select
               value={editing.priority ?? 'medium'}
               onChange={(e) => setEditing({ ...editing, priority: e.target.value as Priority })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             >
               {Object.entries(priorityLabels)
                 .filter(([value]) => ['low', 'medium', 'high', 'critical'].includes(value))
@@ -249,11 +243,11 @@ function ProjectFormModal({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">وضعیت</label>
+            <label className="field-label">وضعیت</label>
             <select
               value={editing.status ?? 'planning'}
               onChange={(e) => setEditing({ ...editing, status: e.target.value as ProjectStatus })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             >
               {Object.entries(projectStatusLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -264,55 +258,55 @@ function ProjectFormModal({
           </div>
         </div>
 
-        <div className="rounded-lg bg-slate-50 p-3">
+        <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-4">
           <div className="mb-2 text-xs font-semibold text-slate-500">اطلاعات مالی</div>
           <div className="grid grid-cols-2 gap-3">
             {!isHourly && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
+                <label className="field-label">
                   مبلغ قرارداد (تومان)
                 </label>
                 <input
                   type="number"
                   value={editing.budget ?? ''}
                   onChange={(e) => setEditing({ ...editing, budget: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
                 />
               </div>
             )}
             {isHourly && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
+                <label className="field-label">
                   هدف درآمد ماهانه (تومان)
                 </label>
                 <input
                   type="number"
                   value={editing.monthly_revenue_target ?? ''}
                   onChange={(e) => setEditing({ ...editing, monthly_revenue_target: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
                 />
               </div>
             )}
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="field-label">
                 نرخ ساعتی هدف (تومان)
               </label>
               <input
                 type="number"
                 value={editing.hourly_rate ?? ''}
                 onChange={(e) => setEditing({ ...editing, hourly_rate: e.target.value })}
-                className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input ltr-nums"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="field-label">
                 ساعت واقعی موردنیاز در ماه
               </label>
               <input
                 type="number"
                 value={editing.estimated_monthly_hours ?? ''}
                 onChange={(e) => setEditing({ ...editing, estimated_monthly_hours: e.target.value })}
-                className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input ltr-nums"
               />
             </div>
           </div>
@@ -324,39 +318,35 @@ function ProjectFormModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">تاریخ شروع</label>
+            <label className="field-label">تاریخ شروع</label>
             <input
               type="date"
               value={editing.start_date ?? ''}
               onChange={(e) => setEditing({ ...editing, start_date: e.target.value })}
-              className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input ltr-nums"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">وب‌سایت</label>
+            <label className="field-label">وب‌سایت</label>
             <input
               value={editing.website ?? ''}
               onChange={(e) => setEditing({ ...editing, website: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="field-input"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">توضیحات</label>
+          <label className="field-label">توضیحات</label>
           <textarea
             value={editing.description ?? ''}
             onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
             rows={2}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-        >
+        <button type="submit" disabled={saving} className="btn-primary w-full">
           ذخیره
         </button>
       </form>

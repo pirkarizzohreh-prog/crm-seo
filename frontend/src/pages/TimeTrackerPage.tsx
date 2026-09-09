@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Clock, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { PageHeader } from '../components/Layout'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
 import { formatHours } from '../lib/format'
@@ -46,28 +47,24 @@ export function TimeTrackerPage() {
     <div>
       <PageHeader
         title="گزارش زمان"
+        subtitle={
+          <>
+            مجموع ثبت‌شده: <span className="font-semibold text-slate-700">{formatHours(totalHours)}</span>
+          </>
+        }
         actions={
-          <button
-            onClick={() => setAdding(emptyForm)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + ثبت دستی زمان
+          <button onClick={() => setAdding(emptyForm)} className="btn-primary">
+            <Plus className="h-4 w-4" /> ثبت دستی زمان
           </button>
         }
       />
 
-      <p className="mb-4 text-sm text-slate-500">
-        مجموع ثبت‌شده: <span className="ltr-nums font-semibold text-slate-900">{formatHours(totalHours)}</span>
-      </p>
-
       {isLoading ? (
         <p className="text-sm text-slate-500">در حال بارگذاری...</p>
       ) : !entries || entries.results.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-          هنوز زمانی ثبت نشده است.
-        </div>
+        <EmptyState icon={Clock} title="هنوز زمانی ثبت نشده است." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs text-slate-500">
@@ -80,11 +77,11 @@ export function TimeTrackerPage() {
             </thead>
             <tbody>
               {entries.results.map((entry) => (
-                <tr key={entry.id} className="border-b border-slate-100 last:border-0">
-                  <td className="ltr-nums px-4 py-3 text-slate-600">{entry.date}</td>
+                <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
+                  <td className="px-4 py-3 text-slate-600">{entry.date}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{entry.task_title}</td>
                   <td className="px-4 py-3 text-slate-500">{entry.project_name}</td>
-                  <td className="ltr-nums px-4 py-3 text-slate-600">{formatHours(entry.duration_hours)}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatHours(entry.duration_hours)}</td>
                   <td className="px-4 py-3 text-slate-500">{entry.notes || '—'}</td>
                 </tr>
               ))}
@@ -103,12 +100,12 @@ export function TimeTrackerPage() {
             className="space-y-3"
           >
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">تسک *</label>
+              <label className="field-label">تسک *</label>
               <select
                 required
                 value={adding.task ?? ''}
                 onChange={(e) => setAdding({ ...adding, task: Number(e.target.value) })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
               >
                 <option value="" disabled>
                   انتخاب کنید
@@ -122,40 +119,36 @@ export function TimeTrackerPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">تاریخ</label>
+                <label className="field-label">تاریخ</label>
                 <input
                   type="date"
                   value={adding.date}
                   onChange={(e) => setAdding({ ...adding, date: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">مدت (ساعت)</label>
+                <label className="field-label">مدت (ساعت)</label>
                 <input
                   required
                   type="number"
                   step="0.25"
                   value={adding.duration_hours}
                   onChange={(e) => setAdding({ ...adding, duration_hours: e.target.value })}
-                  className="ltr-nums w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="field-input ltr-nums"
                 />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">یادداشت</label>
+              <label className="field-label">یادداشت</label>
               <textarea
                 value={adding.notes}
                 onChange={(e) => setAdding({ ...adding, notes: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="field-input"
                 rows={2}
               />
             </div>
-            <button
-              type="submit"
-              disabled={create.isPending}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
+            <button type="submit" disabled={create.isPending} className="btn-primary w-full">
               ذخیره
             </button>
           </form>

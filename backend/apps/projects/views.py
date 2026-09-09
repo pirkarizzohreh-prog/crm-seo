@@ -1,10 +1,12 @@
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Project
-from .serializers import ProjectSerializer
+from .serializers import MonthlyReportSerializer, ProjectSerializer
+from .services import monthly_report
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -47,3 +49,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
         from apps.tasks.serializers import TaskSerializer
 
         return Response(TaskSerializer(created, many=True).data, status=201)
+
+    @action(detail=True, methods=["get"], url_path="monthly-report")
+    def monthly_report_view(self, request, pk=None):
+        """Auto-built monthly report (doc2): completed tasks + hours by
+        category for the given month, vs. the contract amount."""
+        project = self.get_object()
+        today = timezone.localdate()
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+        data = monthly_report(project, year, month)
+        return Response(MonthlyReportSerializer(data).data)

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle, CheckCircle2, Clock3, ListTodo, Play, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
-import { PageHeader } from '../components/Layout'
+import { EmptyState, PageHeader } from '../components/Layout'
 import { StatCard } from '../components/StatCard'
 import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
@@ -41,34 +42,41 @@ export function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="امروز باید روی چه چیزی کار کنم؟" />
+      <PageHeader
+        title="امروز باید روی چه چیزی کار کنم؟"
+        subtitle="خلاصه‌ی وضعیت ظرفیت، درآمد و اولویت‌های امروز شما"
+      />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="ظرفیت این ماه"
           value={formatHours(capacity.consumed_hours)}
+          icon={Clock3}
+          tone={capacity.is_overloaded ? 'danger' : 'default'}
           subtitle={
             <>
-              <span>از {formatHours(capacity.available_hours)} ظرفیت ماهانه — </span>
+              از {formatHours(capacity.available_hours)} ظرفیت ماهانه — {' '}
               {capacity.is_overloaded
                 ? `⚠️ ${formatHours(capacity.overloaded_by)} اضافه‌بار نسبت به تخصیص‌ها`
                 : `${formatHours(capacity.remaining_hours)} باقی‌مانده`}
             </>
           }
-          tone={capacity.is_overloaded ? 'danger' : 'default'}
         />
         <StatCard
           title="ساعت تخصیص‌یافته به پروژه‌ها"
           value={formatHours(capacity.allocated_hours)}
+          icon={ListTodo}
           subtitle="مجموع نیاز پروژه‌های فعال"
         />
         <StatCard
           title="درآمد ماهانه (قراردادی)"
           value={formatToman(revenue.fixed_and_retainer)}
+          icon={Wallet}
         />
         <StatCard
           title="درآمد ماهانه (کل)"
           value={formatToman(revenue.total)}
+          icon={Wallet}
           subtitle={`ساعتی: ${formatToman(revenue.hourly)}`}
           tone="success"
         />
@@ -80,15 +88,16 @@ export function DashboardPage() {
             پیشنهاد امروز ({todayTasks.length})
           </h2>
           {todayTasks.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-              کاری برای امروز پیشنهاد نشده — یا همه‌چیز تمام شده، یا هنوز تسکی ثبت نکرده‌اید.
-            </div>
+            <EmptyState
+              icon={CheckCircle2}
+              title="کاری برای امروز پیشنهاد نشده — یا همه‌چیز تمام شده، یا هنوز تسکی ثبت نکرده‌اید."
+            />
           ) : (
             <ul className="space-y-2">
               {todayTasks.map((task: Task) => (
                 <li
                   key={task.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                  className="card flex flex-wrap items-center justify-between gap-3 p-4"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +112,7 @@ export function DashboardPage() {
                       />
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      <Link to={`/projects/${task.project}`} className="hover:underline">
+                      <Link to={`/projects/${task.project}`} className="hover:text-brand-600 hover:underline">
                         {task.project_name}
                       </Link>
                       {task.deadline && <span> · موعد: {task.deadline}</span>}
@@ -111,19 +120,16 @@ export function DashboardPage() {
                   </div>
                   <div className="flex shrink-0 gap-2">
                     {task.status !== 'doing' && (
-                      <button
-                        onClick={() => startTimer.mutate(task.id)}
-                        className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                      >
-                        شروع تایمر
+                      <button onClick={() => startTimer.mutate(task.id)} className="btn-secondary !px-2.5 !py-1.5 text-xs">
+                        <Play className="h-3.5 w-3.5" /> شروع تایمر
                       </button>
                     )}
                     {task.status !== 'done' && (
                       <button
                         onClick={() => setStatus.mutate({ id: task.id, status: 'done' })}
-                        className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                        className="btn-primary !bg-emerald-600 !px-2.5 !py-1.5 text-xs hover:!bg-emerald-700"
                       >
-                        انجام شد
+                        <CheckCircle2 className="h-3.5 w-3.5" /> انجام شد
                       </button>
                     )}
                   </div>
@@ -136,37 +142,33 @@ export function DashboardPage() {
         <div>
           <h2 className="mb-3 text-sm font-semibold text-slate-700">وضعیت سلامت پروژه‌ها</h2>
           {projectHealth.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-              پروژه فعالی وجود ندارد.
-            </div>
+            <EmptyState icon={AlertTriangle} title="پروژه فعالی وجود ندارد." />
           ) : (
             <ul className="space-y-2">
               {projectHealth.map((p) => (
-                <li
-                  key={p.project_id}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                >
+                <li key={p.project_id} className="card p-4">
                   <div className="flex items-center justify-between">
-                    <Link to={`/projects/${p.project_id}`} className="font-medium text-slate-900 hover:underline">
+                    <Link
+                      to={`/projects/${p.project_id}`}
+                      className="font-medium text-slate-900 hover:text-brand-600 hover:underline"
+                    >
                       {p.project_name}
                     </Link>
                     <span
-                      className={`ltr-nums text-sm font-bold ${p.health_score >= 70 ? 'text-emerald-600' : p.health_score >= 40 ? 'text-amber-600' : 'text-rose-600'}`}
+                      className={`text-sm font-bold ${p.health_score >= 70 ? 'text-emerald-600' : p.health_score >= 40 ? 'text-amber-600' : 'text-rose-600'}`}
                     >
-                      {p.health_score}%
+                      {p.health_score}٪
                     </span>
                   </div>
                   <div className="text-xs text-slate-500">{p.client_name}</div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className={`h-full ${p.health_score >= 70 ? 'bg-emerald-500' : p.health_score >= 40 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                      className={`h-full rounded-full ${p.health_score >= 70 ? 'bg-emerald-500' : p.health_score >= 40 ? 'bg-amber-500' : 'bg-rose-500'}`}
                       style={{ width: `${p.health_score}%` }}
                     />
                   </div>
                   {p.overdue_tasks > 0 && (
-                    <div className="mt-1 text-xs text-rose-600">
-                      {p.overdue_tasks} تسک عقب‌افتاده
-                    </div>
+                    <div className="mt-1 text-xs text-rose-600">{p.overdue_tasks} تسک عقب‌افتاده</div>
                   )}
                 </li>
               ))}

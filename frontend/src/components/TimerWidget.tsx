@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Pause, Play, Square, TimerOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { TimerSession } from '../types'
@@ -47,7 +48,12 @@ export function TimerWidget() {
   })
 
   if (!timer) {
-    return <div className="py-1.5 text-sm text-slate-400">هیچ تایمر فعالی وجود ندارد.</div>
+    return (
+      <div className="flex items-center gap-2 py-1.5 text-sm text-slate-400">
+        <TimerOff className="h-4 w-4" strokeWidth={1.75} />
+        هیچ تایمر فعالی وجود ندارد
+      </div>
+    )
   }
 
   const displaySeconds = timer.is_running ? timer.current_seconds + tick : timer.current_seconds
@@ -60,30 +66,27 @@ export function TimerWidget() {
       <span className="text-sm text-slate-600">
         در حال کار روی <span className="font-medium text-slate-900">{timer.task_title}</span>
       </span>
-      <span className="ltr-nums font-mono text-sm font-semibold text-slate-900">
+      <span className="ltr-nums rounded-md bg-slate-100 px-2 py-0.5 font-mono text-sm font-semibold text-slate-900">
         {formatDuration(displaySeconds)}
       </span>
       <div className="flex gap-2">
         {timer.is_running ? (
           <button
             onClick={() => pause.mutate()}
-            className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="btn-secondary !px-2 !py-1 text-xs"
           >
-            توقف موقت
+            <Pause className="h-3.5 w-3.5" /> توقف موقت
           </button>
         ) : (
           <button
             onClick={() => resume.mutate()}
-            className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="btn-secondary !px-2 !py-1 text-xs"
           >
-            ادامه
+            <Play className="h-3.5 w-3.5" /> ادامه
           </button>
         )}
-        <button
-          onClick={() => stop.mutate()}
-          className="rounded-md bg-rose-600 px-2 py-1 text-xs font-medium text-white hover:bg-rose-700"
-        >
-          پایان و ثبت
+        <button onClick={() => stop.mutate()} className="btn-danger !px-2 !py-1 text-xs">
+          <Square className="h-3.5 w-3.5" /> پایان و ثبت
         </button>
       </div>
     </div>
