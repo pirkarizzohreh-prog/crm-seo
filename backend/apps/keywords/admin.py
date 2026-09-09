@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Keyword, KeywordRankHistory
+from .models import ContentBrief, Keyword, KeywordRankHistory
 
 
 class KeywordRankHistoryInline(admin.TabularInline):
@@ -14,3 +14,10 @@ class KeywordAdmin(admin.ModelAdmin):
     list_filter = ("project",)
     search_fields = ("keyword", "url")
     inlines = [KeywordRankHistoryInline]
+
+
+@admin.register(ContentBrief)
+class ContentBriefAdmin(admin.ModelAdmin):
+    list_display = ("target_keyword", "project", "created_by", "created_at")
+    list_filter = ("project",)
+    search_fields = ("target_keyword",)

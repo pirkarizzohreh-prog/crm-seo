@@ -25,6 +25,19 @@ services:
     volumes:
       - ./backend:/app
 
+  scheduler:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: db
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    command: python manage.py run_daily_digest_scheduler
+
   frontend:
     build: ./frontend
     restart: unless-stopped

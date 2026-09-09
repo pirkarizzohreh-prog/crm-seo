@@ -72,6 +72,11 @@ class Project(models.Model):
     )
     description = models.TextField(blank=True)
 
+    # Google Search Console site identifier for this project's site, e.g.
+    # "https://example.com/" (URL-prefix property) or "sc-domain:example.com"
+    # (domain property). Leave blank to skip the Search Console tab.
+    search_console_site_url = models.CharField(max_length=255, blank=True)
+
     # --- Financials -------------------------------------------------
     # For FIXED / RETAINER / HYBRID: the monthly (or one-off, for FIXED)
     # amount the client pays.

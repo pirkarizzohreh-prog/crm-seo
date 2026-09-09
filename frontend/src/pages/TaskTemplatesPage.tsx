@@ -5,6 +5,7 @@ import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
 import { projectTypeLabels } from '../lib/labels'
+import { useMe } from '../lib/useMe'
 import type { Paginated, ProjectType, TaskCategory, TaskTemplate, TaskTemplateItem } from '../types'
 
 type TemplateForm = {
@@ -26,6 +27,8 @@ function emptyItem(order: number): TaskTemplateItem {
 export function TaskTemplatesPage() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<TemplateForm | null>(null)
+  const { data: me } = useMe()
+  const canEdit = me?.is_owner ?? false
 
   const { data, isLoading } = useQuery<Paginated<TaskTemplate>>({
     queryKey: ['task-templates'],
@@ -70,9 +73,11 @@ export function TaskTemplatesPage() {
         title="قالب‌های تسک سئو"
         subtitle="وقتی پروژه جدیدی می‌سازید، می‌توانید یک قالب را روی آن اعمال کنید تا چک‌لیست اولیه خودکار ساخته شود."
         actions={
-          <button onClick={() => setEditing(emptyForm())} className="btn-primary">
-            <Plus className="h-4 w-4" /> قالب جدید
-          </button>
+          canEdit && (
+            <button onClick={() => setEditing(emptyForm())} className="btn-primary">
+              <Plus className="h-4 w-4" /> قالب جدید
+            </button>
+          )
         }
       />
 
@@ -86,30 +91,32 @@ export function TaskTemplatesPage() {
             <div key={tpl.id} className="card p-4">
               <div className="mb-1 flex items-start justify-between">
                 <span className="font-medium text-slate-900">{tpl.name}</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() =>
-                      setEditing({
-                        id: tpl.id,
-                        name: tpl.name,
-                        description: tpl.description,
-                        project_type: tpl.project_type,
-                        items: tpl.items,
-                      })
-                    }
-                    className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm('این قالب حذف شود؟')) remove.mutate(tpl.id)
-                    }}
-                    className="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() =>
+                        setEditing({
+                          id: tpl.id,
+                          name: tpl.name,
+                          description: tpl.description,
+                          project_type: tpl.project_type,
+                          items: tpl.items,
+                        })
+                      }
+                      className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm('این قالب حذف شود؟')) remove.mutate(tpl.id)
+                      }}
+                      className="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
               {tpl.project_type && (
                 <div className="mb-2 text-xs text-slate-500">{projectTypeLabels[tpl.project_type]}</div>

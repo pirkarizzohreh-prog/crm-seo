@@ -60,11 +60,12 @@ def task_priority_score(task: Task, today=None) -> int:
 
 def recommended_tasks(user, limit: int = 10):
     today = timezone.localdate()
-    tasks = list(
-        Task.objects.filter(project__owner=user)
-        .exclude(status=Task.Status.DONE)
-        .select_related("project", "category")
-    )
+    qs = Task.objects.filter(project__owner=user.effective_owner).exclude(status=Task.Status.DONE)
+    if not user.is_owner:
+        # A staff member's "what should I work on today?" is about their
+        # own queue, not the whole business's; the Owner still sees everyone's.
+        qs = qs.filter(Q(assignee=user) | Q(assignee__isnull=True))
+    tasks = list(qs.select_related("project", "category"))
     scored = [(task_priority_score(t, today), t) for t in tasks]
     scored.sort(key=lambda pair: pair[0], reverse=True)
     return [task for _score, task in scored[:limit]], {t.id: s for s, t in scored}
@@ -84,7 +85,9 @@ class CapacitySummary:
 
 
 def capacity_summary(user) -> CapacitySummary:
-    active_projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE)
+    active_projects = Project.objects.filter(
+        owner=user.effective_owner, status=Project.Status.ACTIVE
+    )
 
     allocated = Decimal("0")
     for project in active_projects:
@@ -126,7 +129,9 @@ class RevenueSummary:
 
 
 def revenue_summary(user) -> RevenueSummary:
-    active_projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE)
+    active_projects = Project.objects.filter(
+        owner=user.effective_owner, status=Project.Status.ACTIVE
+    )
 
     non_hourly_total = (
         active_projects.exclude(billing_type=Project.BillingType.HOURLY).aggregate(
@@ -155,9 +160,9 @@ def project_health(user):
     """Per active project: task completion rate + logged-hours vs. estimate,
     as a rough 0-100 health score ("Client A: 80%")."""
 
-    projects = Project.objects.filter(owner=user, status=Project.Status.ACTIVE).select_related(
-        "client"
-    )
+    projects = Project.objects.filter(
+        owner=user.effective_owner, status=Project.Status.ACTIVE
+    ).select_related("client")
     results = []
     for project in projects:
         task_stats = project.tasks.aggregate(
@@ -188,3 +193,38 @@ def project_health(user):
             }
         )
     return sorted(results, key=lambda r: r["health_score"])
+
+
+# --- Daily digest (email/Telegram) ---------------------------------------
+
+
+def build_daily_digest_text(user) -> str:
+    """Plain-text version of 'امروز باید روی چه چیزی کار کنم؟' — meant to
+    land in an inbox or a Telegram chat without opening the app."""
+    tasks, _scores = recommended_tasks(user, limit=8)
+    capacity = capacity_summary(user)
+    revenue = revenue_summary(user)
+    today = timezone.localdate()
+
+    lines = [f"📋 خلاصه روزانه — {today.strftime('%Y-%m-%d')}", ""]
+
+    if tasks:
+        lines.append("🎯 پیشنهاد کارهای امروز:")
+        for i, task in enumerate(tasks, start=1):
+            deadline = f" (موعد: {task.deadline})" if task.deadline else ""
+            lines.append(f"{i}. {task.title} — {task.project.name}{deadline}")
+    else:
+        lines.append("🎯 کار فوری‌ای برای امروز پیشنهاد نشد.")
+
+    lines += [
+        "",
+        f"⏱ ظرفیت این ماه: {capacity.consumed_hours} از {capacity.available_hours} ساعت مصرف‌شده",
+    ]
+    if capacity.is_overloaded:
+        lines.append(f"⚠️ {capacity.overloaded_by} ساعت اضافه‌بار نسبت به تخصیص‌های فعلی!")
+
+    lines += [
+        "",
+        f"💰 درآمد ماهانه فعال: {revenue.total:,.0f} تومان",
+    ]
+    return "\n".join(lines)

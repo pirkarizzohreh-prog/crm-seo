@@ -41,6 +41,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "hourly_rate",
             "monthly_revenue_target",
             "estimated_monthly_hours",
+            "search_console_site_url",
             "financials",
             "created_at",
             "updated_at",
@@ -76,3 +77,30 @@ class MonthlyReportSerializer(serializers.Serializer):
     total_value_generated = serializers.DecimalField(max_digits=14, decimal_places=2)
     contract_amount = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
     task_count = serializers.IntegerField()
+
+
+class SearchConsoleRowSerializer(serializers.Serializer):
+    clicks = serializers.IntegerField()
+    impressions = serializers.IntegerField()
+    ctr = serializers.FloatField()
+    position = serializers.FloatField()
+
+
+class SearchConsoleQueryRowSerializer(SearchConsoleRowSerializer):
+    query = serializers.CharField()
+
+
+class SearchConsolePageRowSerializer(SearchConsoleRowSerializer):
+    page = serializers.CharField()
+
+
+class SearchConsoleSummarySerializer(serializers.Serializer):
+    site_url = serializers.CharField()
+    period_start = serializers.DateField()
+    period_end = serializers.DateField()
+    total_clicks = serializers.IntegerField()
+    total_impressions = serializers.IntegerField()
+    average_ctr = serializers.FloatField()
+    average_position = serializers.FloatField()
+    top_queries = SearchConsoleQueryRowSerializer(many=True)
+    top_pages = SearchConsolePageRowSerializer(many=True)

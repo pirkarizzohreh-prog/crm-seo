@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -56,3 +57,39 @@ class KeywordRankHistory(models.Model):
 
     def __str__(self) -> str:
         return f"{self.keyword.keyword}: #{self.rank} on {self.checked_on}"
+
+
+class ContentBrief(models.Model):
+    """AI-generated content brief (notes doc: 'تولید Brief محتوا با هوش
+    مصنوعی') — a strategist hands over a keyword instead of writing the
+    intent/structure/FAQ/internal-links brief by hand for every article."""
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="content_briefs")
+    keyword = models.ForeignKey(
+        Keyword, on_delete=models.SET_NULL, null=True, blank=True, related_name="content_briefs"
+    )
+
+    target_keyword = models.CharField(max_length=255)
+    competitor_notes = models.TextField(
+        blank=True, help_text="Optional: competitor URLs/titles or notes to consider."
+    )
+
+    intent = models.CharField(max_length=255, blank=True)
+    h1 = models.CharField(max_length=255, blank=True)
+    headings = models.JSONField(default=list, blank=True, help_text="Ordered [{level, text}] outline.")
+    faq = models.JSONField(default=list, blank=True)
+    related_keywords = models.JSONField(default=list, blank=True)
+    internal_link_suggestions = models.JSONField(default=list, blank=True)
+    target_word_count = models.PositiveIntegerField(null=True, blank=True)
+    cta_suggestion = models.TextField(blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="content_briefs"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Brief: {self.target_keyword} ({self.project})"

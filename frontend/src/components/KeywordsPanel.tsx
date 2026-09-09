@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, Minus, Pencil, Plus, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, Pencil, Plus, Search, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { formatNumber } from '../lib/format'
 import type { Keyword, Paginated } from '../types'
+import { ContentBriefModal } from './ContentBriefModal'
 import { EmptyState } from './Layout'
 import { Modal } from './Modal'
 
@@ -26,6 +27,7 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<KeywordForm | null>(null)
   const [rankInputs, setRankInputs] = useState<Record<number, string>>({})
+  const [briefFor, setBriefFor] = useState<Keyword | 'blank' | null>(null)
 
   const { data, isLoading } = useQuery<Paginated<Keyword>>({
     queryKey: ['keywords', { project: projectId }],
@@ -53,7 +55,10 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end gap-2">
+        <button onClick={() => setBriefFor('blank')} className="btn-secondary">
+          <Sparkles className="h-4 w-4" /> بریف محتوا با AI
+        </button>
         <button onClick={() => setEditing(emptyForm(projectId))} className="btn-primary">
           <Plus className="h-4 w-4" /> کلمه کلیدی جدید
         </button>
@@ -114,12 +119,21 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-end">
-                    <button
-                      onClick={() => setEditing(kw)}
-                      className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => setBriefFor(kw)}
+                        title="تولید بریف محتوا با هوش مصنوعی"
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditing(kw)}
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -197,6 +211,15 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
             </button>
           </form>
         </Modal>
+      )}
+
+      {briefFor && (
+        <ContentBriefModal
+          projectId={projectId}
+          keywordId={briefFor === 'blank' ? undefined : briefFor.id}
+          defaultKeyword={briefFor === 'blank' ? '' : briefFor.keyword}
+          onClose={() => setBriefFor(null)}
+        />
       )}
     </div>
   )

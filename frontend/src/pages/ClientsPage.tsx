@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
 import { clientStatusLabels } from '../lib/labels'
+import { useMe } from '../lib/useMe'
 import type { Client, ClientStatus, Paginated } from '../types'
 
 type ClientForm = Partial<Client>
@@ -25,6 +26,8 @@ const emptyForm: ClientForm = {
 export function ClientsPage() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<ClientForm | null>(null)
+  const { data: me } = useMe()
+  const canEdit = me?.is_owner ?? false
 
   const { data, isLoading } = useQuery<Paginated<Client>>({
     queryKey: ['clients'],
@@ -52,9 +55,11 @@ export function ClientsPage() {
       <PageHeader
         title="مشتری‌ها"
         actions={
-          <button onClick={() => setEditing(emptyForm)} className="btn-primary">
-            <Plus className="h-4 w-4" /> مشتری جدید
-          </button>
+          canEdit && (
+            <button onClick={() => setEditing(emptyForm)} className="btn-primary">
+              <Plus className="h-4 w-4" /> مشتری جدید
+            </button>
+          )
         }
       />
 
@@ -97,24 +102,26 @@ export function ClientsPage() {
                   <td className="px-4 py-3 text-slate-600">{client.active_projects_count}</td>
                   <td className="px-4 py-3 text-slate-500">{client.phone || client.email || '—'}</td>
                   <td className="px-4 py-3 text-end">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => setEditing(client)}
-                        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        title="ویرایش"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('این مشتری حذف شود؟')) remove.mutate(client.id)
-                        }}
-                        className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        title="حذف"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => setEditing(client)}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          title="ویرایش"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('این مشتری حذف شود؟')) remove.mutate(client.id)
+                          }}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                          title="حذف"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

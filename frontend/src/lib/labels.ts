@@ -77,6 +77,15 @@ export const profitabilityLabels: Record<string, string> = {
   unknown: 'نامشخص',
 }
 
+export const roleLabels: Record<string, string> = {
+  owner: 'مالک / مدیر سئو',
+  seo_specialist: 'متخصص سئو',
+  content_writer: 'نویسنده محتوا',
+  developer: 'توسعه‌دهنده',
+  designer: 'طراح',
+  client: 'کاربر پورتال مشتری',
+}
+
 export const profitabilityColors: Record<string, string> = {
   profitable: 'bg-emerald-100 text-emerald-700',
   balanced: 'bg-sky-100 text-sky-700',

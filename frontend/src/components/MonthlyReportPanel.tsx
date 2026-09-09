@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarRange, CheckCircle2, FileBarChart } from 'lucide-react'
+import { CalendarRange, CheckCircle2, FileBarChart, FileDown } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
@@ -43,6 +43,7 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
+  const [downloading, setDownloading] = useState(false)
 
   const { data, isLoading } = useQuery<MonthlyReport>({
     queryKey: ['monthly-report', projectId, year, month],
@@ -50,26 +51,51 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
       (await api.get(`/projects/${projectId}/monthly-report/`, { params: { year, month } })).data,
   })
 
+  async function downloadPdf() {
+    setDownloading(true)
+    try {
+      const response = await api.get(`/projects/${projectId}/monthly-report/pdf/`, {
+        params: { year, month },
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `report-${projectId}-${year}-${String(month).padStart(2, '0')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <select
-          value={month}
-          onChange={(e) => setMonth(Number(e.target.value))}
-          className="field-input w-auto"
-        >
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <option key={m} value={m}>
-              {monthNames[m - 1]}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="field-input ltr-nums w-24"
-        />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className="field-input w-auto"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {monthNames[m - 1]}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="field-input ltr-nums w-24"
+          />
+        </div>
+        <button onClick={downloadPdf} disabled={downloading} className="btn-secondary">
+          <FileDown className="h-4 w-4" /> {downloading ? 'در حال آماده‌سازی...' : 'دانلود PDF'}
+        </button>
       </div>
 
       {isLoading || !data ? (

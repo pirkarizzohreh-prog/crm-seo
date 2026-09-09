@@ -5,23 +5,29 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.permissions import IsOwnerOrReadOnly
+
 from .models import Task, TaskCategory, TaskTemplate
 from .serializers import TaskCategorySerializer, TaskSerializer, TaskTemplateSerializer
 
 
 class TaskCategoryViewSet(viewsets.ModelViewSet):
+    # A shared SEO taxonomy, not per-tenant data - every team member can use
+    # it, but only the Owner curates it.
     queryset = TaskCategory.objects.all()
     serializer_class = TaskCategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     filterset_fields = ["group"]
 
 
 class TaskTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = TaskTemplateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        return TaskTemplate.objects.filter(owner=self.request.user).prefetch_related("items")
+        return TaskTemplate.objects.filter(
+            owner=self.request.user.effective_owner
+        ).prefetch_related("items")
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -33,7 +39,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return (
-            Task.objects.filter(project__owner=self.request.user)
+            Task.objects.filter(project__owner=self.request.user.effective_owner)
             .select_related("project", "category", "assignee")
             .annotate(actual_hours=Sum("time_entries__duration_hours"))
         )

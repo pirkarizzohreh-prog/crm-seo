@@ -12,6 +12,7 @@ import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { TaskTemplatesPage } from './pages/TaskTemplatesPage'
 import { TasksPage } from './pages/TasksPage'
+import { TeamPage } from './pages/TeamPage'
 import { TimeTrackerPage } from './pages/TimeTrackerPage'
 
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/templates" element={<TaskTemplatesPage />} />
+              <Route path="/team" element={<TeamPage />} />
               <Route path="/time" element={<TimeTrackerPage />} />
             </Route>
           </Routes>

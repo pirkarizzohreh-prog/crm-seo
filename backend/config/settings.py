@@ -161,3 +161,32 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:5173,http://127.0.0.1:5173",
     cast=Csv(),
 )
+
+# --- Third-party integrations (all optional; each feature degrades to a
+# clear "not configured" message when its keys are unset) ----------------
+
+# AI content brief generation (apps.keywords.ai) — your own key from
+# console.anthropic.com. This is billed to your own Anthropic account.
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+
+# Daily digest notifications (apps.dashboard.management.commands.send_daily_digest)
+DIGEST_CHANNELS = config("DIGEST_CHANNELS", default="", cast=Csv())  # e.g. "email,telegram"
+DIGEST_EMAIL_TO = config("DIGEST_EMAIL_TO", default="", cast=Csv())
+TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID", default="")
+DIGEST_TIME = config("DIGEST_TIME", default="08:00")  # HH:MM, used by the scheduler loop
+
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="crm@example.com")
+
+# Google Search Console (apps.integrations.search_console) — a service
+# account JSON key file path; share the GSC property with that service
+# account's email address.
+GOOGLE_SERVICE_ACCOUNT_FILE = config("GOOGLE_SERVICE_ACCOUNT_FILE", default="")

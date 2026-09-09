@@ -39,7 +39,7 @@ class TimerView(APIView):
     def post(self, request):
         """Start a timer for a task. Only one active timer per user."""
         task_id = request.data.get("task")
-        task = Task.objects.filter(id=task_id, project__owner=request.user).first()
+        task = Task.objects.filter(id=task_id, project__owner=request.user.effective_owner).first()
         if task is None:
             return Response({"detail": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
 

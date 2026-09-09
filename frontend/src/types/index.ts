@@ -63,6 +63,7 @@ export interface Project {
   hourly_rate: string | null
   monthly_revenue_target: string | null
   estimated_monthly_hours: string | null
+  search_console_site_url: string
   financials: ProjectFinancials
   created_at: string
   updated_at: string
@@ -204,13 +205,57 @@ export interface Keyword {
   updated_at: string
 }
 
+export type UserRole =
+  | 'owner'
+  | 'seo_specialist'
+  | 'content_writer'
+  | 'developer'
+  | 'designer'
+  | 'client'
+
+export interface ContentBriefHeading {
+  level: string
+  text: string
+}
+
+export interface ContentBrief {
+  id: number
+  project: number
+  keyword: number | null
+  target_keyword: string
+  competitor_notes: string
+  intent: string
+  h1: string
+  headings: ContentBriefHeading[]
+  faq: string[]
+  related_keywords: string[]
+  internal_link_suggestions: string[]
+  target_word_count: number | null
+  cta_suggestion: string
+  created_at: string
+}
+
 export interface Me {
   id: number
   username: string
   email: string
   first_name: string
   last_name: string
-  role: string
+  role: UserRole
+  is_owner: boolean
   monthly_capacity_hours: string
   working_days_per_month: number
+}
+
+export interface TeamMember {
+  id: number
+  username: string
+  password?: string
+  email: string
+  first_name: string
+  last_name: string
+  role: UserRole
+  monthly_capacity_hours: string
+  working_days_per_month: number
+  is_active: boolean
 }

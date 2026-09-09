@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   Search,
+  Users,
   Users2,
   Wallet,
   X,
@@ -14,6 +15,7 @@ import {
 import { type ReactNode, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { useMe } from '../lib/useMe'
 import { TimerWidget } from './TimerWidget'
 
 const navItems = [
@@ -26,8 +28,12 @@ const navItems = [
   { to: '/time', label: 'گزارش زمان', icon: Clock },
 ]
 
+const ownerOnlyNavItems = [{ to: '/team', label: 'اعضای تیم', icon: Users, end: false }]
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { logout } = useAuth()
+  const { data: me } = useMe()
+  const items = me?.is_owner ? [...navItems, ...ownerOnlyNavItems] : navItems
 
   return (
     <>
@@ -41,7 +47,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
       <nav className="space-y-1">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

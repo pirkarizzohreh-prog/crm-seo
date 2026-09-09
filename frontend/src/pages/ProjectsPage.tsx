@@ -16,6 +16,7 @@ import {
   projectStatusLabels,
   projectTypeLabels,
 } from '../lib/labels'
+import { useMe } from '../lib/useMe'
 import type { BillingType, Client, Paginated, Priority, Project, ProjectStatus, ProjectType } from '../types'
 
 type ProjectForm = Partial<Project>
@@ -32,6 +33,8 @@ export function ProjectsPage() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<ProjectForm | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const { data: me } = useMe()
+  const canEdit = me?.is_owner ?? false
 
   const { data: clients } = useQuery<Paginated<Client>>({
     queryKey: ['clients'],
@@ -60,9 +63,11 @@ export function ProjectsPage() {
       <PageHeader
         title="پروژه‌ها"
         actions={
-          <button onClick={() => setEditing(emptyForm)} className="btn-primary">
-            <Plus className="h-4 w-4" /> پروژه جدید
-          </button>
+          canEdit && (
+            <button onClick={() => setEditing(emptyForm)} className="btn-primary">
+              <Plus className="h-4 w-4" /> پروژه جدید
+            </button>
+          )
         }
       />
 
@@ -93,13 +98,15 @@ export function ProjectsPage() {
                 <Link to={`/projects/${project.id}`} className="font-medium text-slate-900 hover:text-brand-600 hover:underline">
                   {project.name}
                 </Link>
-                <button
-                  onClick={() => setEditing(project)}
-                  className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  title="ویرایش"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => setEditing(project)}
+                    className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    title="ویرایش"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
               <div className="mb-2 text-xs text-slate-500">{project.client_name}</div>
               <div className="mb-3 flex flex-wrap gap-1.5">

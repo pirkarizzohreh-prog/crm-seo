@@ -7,6 +7,7 @@ import { KeywordsPanel } from '../components/KeywordsPanel'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { MonthlyReportPanel } from '../components/MonthlyReportPanel'
+import { SearchConsolePanel } from '../components/SearchConsolePanel'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
 import { api } from '../lib/api'
@@ -29,7 +30,7 @@ export function ProjectDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
-  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report'>('tasks')
+  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'search-console'>('tasks')
   const [applyingTemplate, setApplyingTemplate] = useState(false)
 
   const { data: project } = useQuery<Project>({
@@ -140,6 +141,7 @@ export function ProjectDetailPage() {
           { key: 'tasks', label: `تسک‌ها (${taskList.length})` },
           { key: 'keywords', label: 'کلمات کلیدی' },
           { key: 'report', label: 'گزارش ماهانه' },
+          { key: 'search-console', label: 'سرچ کنسول' },
         ]}
         active={tab}
         onChange={(k) => setTab(k as typeof tab)}
@@ -192,6 +194,7 @@ export function ProjectDetailPage() {
 
       {tab === 'keywords' && <KeywordsPanel projectId={Number(id)} />}
       {tab === 'report' && <MonthlyReportPanel projectId={Number(id)} />}
+      {tab === 'search-console' && <SearchConsolePanel project={project} />}
 
       {editingTask && (
         <Modal title={editingTask.id ? 'ویرایش تسک' : 'تسک جدید'} onClose={() => setEditingTask(null)}>
