@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, Minus, Pencil, Plus, Search, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { formatNumber } from '../lib/format'
+import { formatDate, formatNumber } from '../lib/format'
 import type { Keyword, Paginated } from '../types'
 import { ContentBriefModal } from './ContentBriefModal'
 import { FormError } from './FormError'
@@ -95,7 +95,7 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
                   </td>
                   <td className="px-4 py-3 text-slate-600">{kw.target_rank ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-600">{formatNumber(kw.search_volume, 0)}</td>
-                  <td className="px-4 py-3 text-slate-500">{kw.last_checked ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-500">{formatDate(kw.last_checked)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       <input

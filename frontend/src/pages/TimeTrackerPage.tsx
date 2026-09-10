@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Clock, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { FormError } from '../components/FormError'
+import { JalaliDateInput } from '../components/JalaliDateInput'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
-import { formatHours } from '../lib/format'
+import { formatDate, formatHours } from '../lib/format'
 import type { Paginated, Task, TimeEntry } from '../types'
 
 type EntryForm = {
@@ -79,7 +80,7 @@ export function TimeTrackerPage() {
             <tbody>
               {entries.results.map((entry) => (
                 <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                  <td className="px-4 py-3 text-slate-600">{entry.date}</td>
+                  <td className="px-4 py-3 text-slate-600">{formatDate(entry.date)}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{entry.task_title}</td>
                   <td className="px-4 py-3 text-slate-500">{entry.project_name}</td>
                   <td className="px-4 py-3 text-slate-600">{formatHours(entry.duration_hours)}</td>
@@ -121,12 +122,7 @@ export function TimeTrackerPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="field-label">تاریخ</label>
-                <input
-                  type="date"
-                  value={adding.date}
-                  onChange={(e) => setAdding({ ...adding, date: e.target.value })}
-                  className="field-input ltr-nums"
-                />
+                <JalaliDateInput required value={adding.date} onChange={(iso) => setAdding({ ...adding, date: iso })} />
               </div>
               <div>
                 <label className="field-label">مدت (ساعت)</label>

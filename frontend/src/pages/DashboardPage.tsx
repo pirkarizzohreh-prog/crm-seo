@@ -5,7 +5,7 @@ import { Badge } from '../components/Badge'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { StatCard } from '../components/StatCard'
 import { api } from '../lib/api'
-import { formatHours, formatToman } from '../lib/format'
+import { formatDate, formatHours, formatToman } from '../lib/format'
 import { priorityColors, priorityLabels, taskStatusColors, taskStatusLabels } from '../lib/labels'
 import type { DashboardData, Task } from '../types'
 
@@ -115,7 +115,7 @@ export function DashboardPage() {
                       <Link to={`/projects/${task.project}`} className="hover:text-brand-600 hover:underline">
                         {task.project_name}
                       </Link>
-                      {task.deadline && <span> · موعد: {task.deadline}</span>}
+                      {task.deadline && <span> · موعد: {formatDate(task.deadline)}</span>}
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-2">

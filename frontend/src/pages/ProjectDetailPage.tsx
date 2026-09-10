@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
 import { FormError } from '../components/FormError'
+import { JalaliDateInput } from '../components/JalaliDateInput'
 import { KeywordsPanel } from '../components/KeywordsPanel'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
@@ -12,7 +13,7 @@ import { SearchConsolePanel } from '../components/SearchConsolePanel'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
 import { api } from '../lib/api'
-import { formatHours, formatToman } from '../lib/format'
+import { formatDate, formatHours, formatToman } from '../lib/format'
 import {
   priorityColors,
   priorityLabels,
@@ -165,7 +166,7 @@ export function ProjectDetailPage() {
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
                     {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)} تخمینی
-                    {task.deadline && ` · موعد: ${task.deadline}`}
+                    {task.deadline && ` · موعد: ${formatDate(task.deadline)}`}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -266,11 +267,9 @@ export function ProjectDetailPage() {
               </div>
               <div>
                 <label className="field-label">موعد انجام</label>
-                <input
-                  type="date"
-                  value={editingTask.deadline ?? ''}
-                  onChange={(e) => setEditingTask({ ...editingTask, deadline: e.target.value })}
-                  className="field-input ltr-nums"
+                <JalaliDateInput
+                  value={editingTask.deadline}
+                  onChange={(iso) => setEditingTask({ ...editingTask, deadline: iso || null })}
                 />
               </div>
             </div>

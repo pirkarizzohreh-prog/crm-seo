@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { api } from '../lib/api'
-import { formatHours } from '../lib/format'
+import { formatDate, formatHours } from '../lib/format'
 import { priorityColors, priorityLabels, taskStatusColors, taskStatusLabels } from '../lib/labels'
 import type { Paginated, Task, TaskStatus } from '../types'
 
@@ -74,7 +74,7 @@ export function TasksPage() {
                   <span>
                     {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)}
                   </span>
-                  {task.deadline && <span> · موعد: {task.deadline}</span>}
+                  {task.deadline && <span> · موعد: {formatDate(task.deadline)}</span>}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">

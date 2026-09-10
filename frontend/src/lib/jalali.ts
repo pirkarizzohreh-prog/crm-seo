@@ -84,9 +84,30 @@ export function toJalali(date: Date): { jy: number; jm: number; jd: number } {
   return d2j(g2d(date.getFullYear(), date.getMonth() + 1, date.getDate()))
 }
 
+function jalaliToGregorianParts(jy: number, jm: number, jd: number): { gy: number; gm: number; gd: number } {
+  return d2g(j2d(jy, jm, jd))
+}
+
 export function jalaliToGregorian(jy: number, jm: number, jd: number): Date {
-  const { gy, gm, gd } = d2g(j2d(jy, jm, jd))
+  const { gy, gm, gd } = jalaliToGregorianParts(jy, jm, jd)
   return new Date(gy, gm - 1, gd)
+}
+
+/** Parse an ISO "YYYY-MM-DD" string (as stored/sent by the API) straight
+ * into its Jalali parts, without going through a JS Date — avoids any
+ * timezone-related day-shift from Date's UTC parsing of date-only strings. */
+export function isoToJalali(iso: string): { jy: number; jm: number; jd: number } | null {
+  if (!iso) return null
+  const [gy, gm, gd] = iso.split('-').map(Number)
+  if (!gy || !gm || !gd) return null
+  return d2j(g2d(gy, gm, gd))
+}
+
+/** Inverse of isoToJalali: format a Jalali date back into the "YYYY-MM-DD"
+ * string the API expects, again without an intermediate Date object. */
+export function jalaliToISO(jy: number, jm: number, jd: number): string {
+  const { gy, gm, gd } = jalaliToGregorianParts(jy, jm, jd)
+  return `${String(gy).padStart(4, '0')}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`
 }
 
 export function isLeapJalaliYear(jy: number): boolean {
