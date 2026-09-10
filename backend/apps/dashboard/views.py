@@ -4,7 +4,14 @@ from rest_framework.views import APIView
 
 from apps.tasks.serializers import TaskSerializer
 
-from .services import capacity_summary, overdue_tasks, project_health, revenue_summary, today_tasks as get_today_tasks
+from .services import (
+    capacity_summary,
+    overdue_tasks,
+    project_health,
+    revenue_summary,
+    today_activity,
+    today_tasks as get_today_tasks,
+)
 
 
 class DashboardView(APIView):
@@ -22,6 +29,8 @@ class DashboardView(APIView):
 
         overdue = TaskSerializer(overdue_tasks(user, limit=20), many=True).data
 
+        activity_by_project, activity_total_hours = today_activity(user)
+
         capacity = capacity_summary(user)
         revenue = revenue_summary(user)
 
@@ -29,6 +38,8 @@ class DashboardView(APIView):
             {
                 "today_tasks": today_tasks,
                 "overdue_tasks": overdue,
+                "today_activity": activity_by_project,
+                "today_total_hours": activity_total_hours,
                 "capacity": {
                     "available_hours": capacity.available_hours,
                     "allocated_hours": capacity.allocated_hours,

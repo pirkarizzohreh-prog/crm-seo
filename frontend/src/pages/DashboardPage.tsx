@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, Clock3, ListTodo, Play, Wallet } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock3, History, ListTodo, Play, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
 import { EmptyState, PageHeader } from '../components/Layout'
@@ -44,6 +44,8 @@ export function DashboardPage() {
     project_health: projectHealth,
     today_tasks: todayTasks,
     overdue_tasks: overdueTasks,
+    today_activity: todayActivity,
+    today_total_hours: todayTotalHours,
   } = data
 
   return (
@@ -86,6 +88,44 @@ export function DashboardPage() {
           subtitle={`ساعتی: ${formatToman(revenue.hourly)}`}
           tone="success"
         />
+        <StatCard
+          title="ساعت کار امروز"
+          value={formatHours(todayTotalHours)}
+          icon={History}
+          subtitle={`روی ${todayActivity.length} پروژه`}
+        />
+      </div>
+
+      <div className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">امروز روی چه پروژه‌هایی کار کردم</h2>
+        {todayActivity.length === 0 ? (
+          <EmptyState icon={History} title="امروز هنوز زمانی با تایمر ثبت نکرده‌اید." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {todayActivity.map((p) => (
+              <div key={p.project_id} className="card p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <Link
+                    to={`/projects/${p.project_id}`}
+                    className="font-medium text-slate-900 hover:text-brand-600 hover:underline"
+                  >
+                    {p.project_name}
+                  </Link>
+                  <span className="text-sm font-bold text-brand-600">{formatHours(p.hours)}</span>
+                </div>
+                <ul className="space-y-1.5 text-sm text-slate-600">
+                  {p.entries.map((entry, i) => (
+                    <li key={i}>
+                      <span className="text-slate-800">{entry.task_title}</span>
+                      <span className="text-xs text-slate-400"> · {formatHours(entry.hours)}</span>
+                      {entry.notes && <div className="text-xs text-slate-500">{entry.notes}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

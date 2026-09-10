@@ -108,6 +108,40 @@ def overdue_tasks(user, limit: int = 20):
     return tasks[:limit]
 
 
+def today_activity(user):
+    """What the current user actually logged today: hours + task worked on,
+    grouped by project — the "امروز روی چه پروژه‌هایی کار کردم" card — plus
+    the total across all of them for a single "امروز چند ساعت کار کردم؟"
+    number. Scoped to this user's own TimeEntry rows (not the whole team's),
+    since it's a personal "what did I do" view."""
+    today = timezone.localdate()
+    entries = (
+        TimeEntry.objects.filter(user=user, date=today)
+        .select_related("task", "task__project")
+        .order_by("task__project__name", "created_at")
+    )
+
+    by_project: dict[int, dict] = {}
+    total_hours = Decimal("0")
+    for entry in entries:
+        project = entry.task.project
+        bucket = by_project.setdefault(
+            project.id,
+            {"project_id": project.id, "project_name": project.name, "hours": Decimal("0"), "entries": []},
+        )
+        bucket["hours"] += entry.duration_hours
+        bucket["entries"].append(
+            {
+                "task_title": entry.task.title,
+                "hours": entry.duration_hours,
+                "notes": entry.notes,
+            }
+        )
+        total_hours += entry.duration_hours
+
+    return list(by_project.values()), total_hours
+
+
 # --- Capacity planning (module 8) ---------------------------------------
 
 

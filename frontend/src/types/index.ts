@@ -151,9 +151,24 @@ export interface ProjectHealth {
   health_score: number
 }
 
+export interface TodayActivityEntry {
+  task_title: string
+  hours: string
+  notes: string
+}
+
+export interface TodayActivityProject {
+  project_id: number
+  project_name: string
+  hours: string
+  entries: TodayActivityEntry[]
+}
+
 export interface DashboardData {
   today_tasks: Task[]
   overdue_tasks: Task[]
+  today_activity: TodayActivityProject[]
+  today_total_hours: string
   capacity: CapacitySummary
   revenue: RevenueSummary
   project_health: ProjectHealth[]
