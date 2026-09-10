@@ -121,9 +121,9 @@ def monthly_report(project: Project, year: int, month: int) -> dict:
         .order_by("category__group", "completed_at")
     )
 
-    entries = TimeEntry.objects.filter(task__project=project, date__gte=start, date__lte=end).select_related(
-        "task__category"
-    )
+    entries = TimeEntry.objects.filter(
+        task__project=project, date__gte=start, date__lte=end
+    ).select_related("task__category").order_by("date", "created_at")
 
     hours_by_category: dict[str, Decimal] = {}
     total_hours = Decimal("0")
@@ -152,6 +152,18 @@ def monthly_report(project: Project, year: int, month: int) -> dict:
         ],
         "hours_by_category": [
             {"category_name": name, "hours": hours} for name, hours in sorted(hours_by_category.items())
+        ],
+        # The day-by-day activity log (module 7: "چه کاری انجام شد") — pulled
+        # straight from each logged time entry's notes, so the report shows
+        # actual work done, not just categories and totals.
+        "activity_log": [
+            {
+                "date": entry.date,
+                "task_title": entry.task.title,
+                "hours": entry.duration_hours,
+                "notes": entry.notes,
+            }
+            for entry in entries
         ],
         "total_hours": total_hours,
         "total_value_generated": total_value_generated,

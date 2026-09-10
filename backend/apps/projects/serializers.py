@@ -71,6 +71,13 @@ class HoursByCategorySerializer(serializers.Serializer):
     hours = serializers.DecimalField(max_digits=8, decimal_places=2)
 
 
+class ActivityLogEntrySerializer(serializers.Serializer):
+    date = serializers.DateField()
+    task_title = serializers.CharField()
+    hours = serializers.DecimalField(max_digits=5, decimal_places=2)
+    notes = serializers.CharField(allow_blank=True)
+
+
 class MonthlyReportSerializer(serializers.Serializer):
     project_id = serializers.IntegerField()
     project_name = serializers.CharField()
@@ -78,6 +85,7 @@ class MonthlyReportSerializer(serializers.Serializer):
     period_end = serializers.DateField()
     completed_tasks = CompletedTaskReportSerializer(many=True)
     hours_by_category = HoursByCategorySerializer(many=True)
+    activity_log = ActivityLogEntrySerializer(many=True)
     total_hours = serializers.DecimalField(max_digits=8, decimal_places=2)
     total_value_generated = serializers.DecimalField(max_digits=14, decimal_places=2)
     contract_amount = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)

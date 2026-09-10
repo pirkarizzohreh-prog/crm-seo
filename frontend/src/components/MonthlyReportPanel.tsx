@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarRange, CheckCircle2, FileBarChart, FileDown } from 'lucide-react'
+import { CalendarRange, CheckCircle2, FileBarChart, FileDown, NotebookText } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { formatHours, formatToman } from '../lib/format'
+import { formatDate, formatHours, formatToman } from '../lib/format'
 import { EmptyState } from './Layout'
 import { StatCard } from './StatCard'
 
@@ -18,6 +18,7 @@ interface MonthlyReport {
     value_generated: string | null
   }[]
   hours_by_category: { category_name: string; hours: string }[]
+  activity_log: { date: string; task_title: string; hours: string; notes: string }[]
   total_hours: string
   total_value_generated: string
   contract_amount: string | null
@@ -148,6 +149,27 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
                 </ul>
               )}
             </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="mb-3 text-sm font-semibold text-slate-700">یادداشت‌های فعالیت روزانه</h3>
+            {data.activity_log.length === 0 ? (
+              <EmptyState icon={NotebookText} title="زمانی برای این ماه ثبت نشده است." />
+            ) : (
+              <ul className="card divide-y divide-slate-100">
+                {data.activity_log.map((entry, i) => (
+                  <li key={i} className="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium text-slate-900">{entry.task_title}</div>
+                      <div className="text-xs text-slate-500">
+                        {formatDate(entry.date)} · {formatHours(entry.hours)}
+                      </div>
+                      {entry.notes && <div className="mt-1 text-slate-600">{entry.notes}</div>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}

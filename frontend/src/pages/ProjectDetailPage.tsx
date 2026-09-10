@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Plus, TrendingUp } from 'lucide-react'
+import { ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
@@ -70,6 +70,14 @@ export function ProjectDetailPage() {
     mutationFn: ({ taskId, status }: { taskId: number; status: TaskStatus }) =>
       api.patch(`/tasks/${taskId}/`, { status }),
     onSuccess: invalidateTasks,
+  })
+
+  const startTimer = useMutation({
+    mutationFn: (taskId: number) => api.post('/time/timer/', { task: taskId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['timer'] })
+      invalidateTasks()
+    },
   })
 
   const { data: templates } = useQuery<Paginated<TaskTemplate>>({
@@ -159,6 +167,8 @@ export function ProjectDetailPage() {
         onChange={(k) => setTab(k as typeof tab)}
       />
 
+      {tab === 'tasks' && <FormError error={startTimer.error} />}
+
       {tab === 'tasks' &&
         (taskList.length === 0 ? (
           <EmptyState icon={ClipboardList} title="هنوز تسکی برای این پروژه ثبت نشده است." />
@@ -180,6 +190,14 @@ export function ProjectDetailPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => startTimer.mutate(task.id)}
+                    disabled={startTimer.isPending}
+                    className="rounded-md p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
+                    title="شروع تایمر روی این تسک"
+                  >
+                    <Play className="h-4 w-4" />
+                  </button>
                   <select
                     value={task.status}
                     onChange={(e) => setStatus.mutate({ taskId: task.id, status: e.target.value as TaskStatus })}

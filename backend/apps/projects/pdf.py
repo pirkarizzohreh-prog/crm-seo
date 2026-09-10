@@ -139,6 +139,21 @@ def render_monthly_report_pdf(report: dict) -> bytes:
         for row in report["hours_by_category"]
     ) or f"<tr class='hours-row'><td>{rtl('زمانی برای این ماه ثبت نشده است.')}</td></tr>"
 
+    def _activity_row(e: dict) -> str:
+        entry_date = e["date"].strftime("%Y-%m-%d")
+        return (
+            "<tr class='task-row'>"
+            f"<td>{rtl(entry_date)}</td>"
+            f"<td>{rtl(e['task_title'])}</td>"
+            f"<td>{_hours(e['hours'])}</td>"
+            f"<td>{rtl(e['notes'] or '—')}</td>"
+            "</tr>"
+        )
+
+    rows_activity = "".join(_activity_row(e) for e in report["activity_log"]) or (
+        f"<tr class='task-row'><td colspan='4'>{rtl('زمانی برای این ماه ثبت نشده است.')}</td></tr>"
+    )
+
     html = f"""
     <html dir="rtl">
     <head><style>{PAGE_CSS}</style></head>
@@ -172,6 +187,9 @@ def render_monthly_report_pdf(report: dict) -> bytes:
 
         <h2>{rtl('ساعت کار به تفکیک دسته')}</h2>
         <table>{rows_hours}</table>
+
+        <h2>{rtl('یادداشت‌های فعالیت روزانه')}</h2>
+        <table>{rows_activity}</table>
 
         <div class="footer">{rtl('تولید‌شده توسط سیستم عملیات آژانس سئو')}</div>
     </body>

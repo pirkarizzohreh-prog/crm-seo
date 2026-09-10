@@ -3,6 +3,8 @@ import { Pause, Play, Square, TimerOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { TimerSession } from '../types'
+import { FormError } from './FormError'
+import { Modal } from './Modal'
 
 function formatDuration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600)
@@ -14,6 +16,8 @@ function formatDuration(totalSeconds: number): string {
 export function TimerWidget() {
   const queryClient = useQueryClient()
   const [tick, setTick] = useState(0)
+  const [stopping, setStopping] = useState(false)
+  const [notes, setNotes] = useState('')
 
   const { data: timer } = useQuery<TimerSession | null>({
     queryKey: ['timer'],
@@ -43,8 +47,12 @@ export function TimerWidget() {
     onSuccess: invalidate,
   })
   const stop = useMutation({
-    mutationFn: () => api.post('/time/timer/stop/', {}),
-    onSuccess: invalidate,
+    mutationFn: (notes: string) => api.post('/time/timer/stop/', { notes }),
+    onSuccess: () => {
+      invalidate()
+      setStopping(false)
+      setNotes('')
+    },
   })
 
   if (!timer) {
@@ -85,10 +93,44 @@ export function TimerWidget() {
             <Play className="h-3.5 w-3.5" /> ادامه
           </button>
         )}
-        <button onClick={() => stop.mutate()} className="btn-danger !px-2 !py-1 text-xs">
+        <button onClick={() => setStopping(true)} className="btn-danger !px-2 !py-1 text-xs">
           <Square className="h-3.5 w-3.5" /> پایان و ثبت
         </button>
       </div>
+
+      {stopping && (
+        <Modal title="پایان تایمر" onClose={() => setStopping(false)}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              stop.mutate(notes)
+            }}
+            className="space-y-3"
+          >
+            <p className="text-sm text-slate-500">
+              روی <span className="font-medium text-slate-900">{timer.task_title}</span> چه کاری انجام
+              دادید؟ این یادداشت توی گزارش ماهانه پروژه می‌آید.
+            </p>
+            <textarea
+              autoFocus
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="field-input"
+              rows={3}
+              placeholder="مثلاً: بهینه‌سازی عنوان و متا ۱۲ محصول، رفع خطای ایندکس ۳ صفحه..."
+            />
+            <FormError error={stop.error} />
+            <div className="flex gap-2">
+              <button type="submit" disabled={stop.isPending} className="btn-primary flex-1">
+                ثبت و پایان
+              </button>
+              <button type="button" onClick={() => setStopping(false)} className="btn-secondary">
+                انصراف
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   )
 }
