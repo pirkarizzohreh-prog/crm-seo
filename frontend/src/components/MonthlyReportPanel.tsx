@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarRange, CheckCircle2, FileBarChart, FileDown, NotebookText } from 'lucide-react'
+import { CalendarRange, CheckCircle2, FileBarChart, FileDown, FileSpreadsheet, NotebookText } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { formatDate, formatHours, formatToman } from '../lib/format'
@@ -45,6 +45,7 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [downloading, setDownloading] = useState(false)
+  const [downloadingXlsx, setDownloadingXlsx] = useState(false)
 
   const { data, isLoading } = useQuery<MonthlyReport>({
     queryKey: ['monthly-report', projectId, year, month],
@@ -52,25 +53,33 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
       (await api.get(`/projects/${projectId}/monthly-report/`, { params: { year, month } })).data,
   })
 
-  async function downloadPdf() {
-    setDownloading(true)
+  async function downloadFile(path: string, extension: string, mimeType: string, setBusy: (b: boolean) => void) {
+    setBusy(true)
     try {
-      const response = await api.get(`/projects/${projectId}/monthly-report/pdf/`, {
-        params: { year, month },
-        responseType: 'blob',
-      })
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const response = await api.get(path, { params: { year, month }, responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: mimeType }))
       const link = document.createElement('a')
       link.href = url
-      link.download = `report-${projectId}-${year}-${String(month).padStart(2, '0')}.pdf`
+      link.download = `report-${projectId}-${year}-${String(month).padStart(2, '0')}.${extension}`
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
     } finally {
-      setDownloading(false)
+      setBusy(false)
     }
   }
+
+  const downloadPdf = () =>
+    downloadFile(`/projects/${projectId}/monthly-report/pdf/`, 'pdf', 'application/pdf', setDownloading)
+
+  const downloadXlsx = () =>
+    downloadFile(
+      `/projects/${projectId}/monthly-report/xlsx/`,
+      'xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      setDownloadingXlsx,
+    )
 
   return (
     <div>
@@ -94,9 +103,14 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
             className="field-input ltr-nums w-24"
           />
         </div>
-        <button onClick={downloadPdf} disabled={downloading} className="btn-secondary">
-          <FileDown className="h-4 w-4" /> {downloading ? 'در حال آماده‌سازی...' : 'دانلود PDF'}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={downloadXlsx} disabled={downloadingXlsx} className="btn-secondary">
+            <FileSpreadsheet className="h-4 w-4" /> {downloadingXlsx ? 'در حال آماده‌سازی...' : 'دانلود اکسل'}
+          </button>
+          <button onClick={downloadPdf} disabled={downloading} className="btn-secondary">
+            <FileDown className="h-4 w-4" /> {downloading ? 'در حال آماده‌سازی...' : 'دانلود PDF'}
+          </button>
+        </div>
       </div>
 
       {isLoading || !data ? (

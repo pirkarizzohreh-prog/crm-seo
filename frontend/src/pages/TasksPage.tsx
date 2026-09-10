@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { api } from '../lib/api'
-import { formatDate, formatHours } from '../lib/format'
+import { fasterThanEstimateLabel, formatDate, formatHours } from '../lib/format'
 import { priorityColors, priorityLabels, taskStatusColors, taskStatusLabels } from '../lib/labels'
 import type { Paginated, Task, TaskStatus } from '../types'
 
@@ -65,6 +65,11 @@ export function TasksPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-slate-900">{task.title}</span>
                   <Badge label={priorityLabels[task.priority]} className={priorityColors[task.priority]} />
+                  {task.status === 'done' &&
+                    (() => {
+                      const label = fasterThanEstimateLabel(task.actual_hours, task.estimated_hours)
+                      return label && <Badge label={label} className="bg-emerald-100 text-emerald-700" />
+                    })()}
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
                   <Link to={`/projects/${task.project}`} className="hover:text-brand-600 hover:underline">

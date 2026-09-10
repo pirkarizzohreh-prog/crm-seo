@@ -146,6 +146,7 @@ def monthly_report(project: Project, year: int, month: int) -> dict:
                 "category_name": t.category.name if t.category else None,
                 "category_group": t.category.group if t.category else None,
                 "completed_at": t.completed_at,
+                "estimated_hours": t.estimated_hours,
                 "value_generated": t.value_generated,
             }
             for t in completed_tasks

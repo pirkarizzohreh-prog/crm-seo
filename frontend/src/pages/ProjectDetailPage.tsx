@@ -13,7 +13,7 @@ import { SearchConsolePanel } from '../components/SearchConsolePanel'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
 import { api } from '../lib/api'
-import { formatDate, formatHours, formatToman } from '../lib/format'
+import { fasterThanEstimateLabel, formatDate, formatHours, formatToman } from '../lib/format'
 import {
   priorityColors,
   priorityLabels,
@@ -183,6 +183,11 @@ export function ProjectDetailPage() {
                     {task.category_name && (
                       <Badge label={task.category_name} className="bg-slate-100 text-slate-600" />
                     )}
+                    {task.status === 'done' &&
+                      (() => {
+                        const label = fasterThanEstimateLabel(task.actual_hours, task.estimated_hours)
+                        return label && <Badge label={label} className="bg-emerald-100 text-emerald-700" />
+                      })()}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
                     {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)} تخمینی

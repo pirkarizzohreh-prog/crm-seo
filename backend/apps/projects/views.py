@@ -12,6 +12,7 @@ from .pdf import render_monthly_report_pdf
 from .search_console import SearchConsoleNotConfigured, get_search_console_summary
 from .serializers import MonthlyReportSerializer, ProjectSerializer, SearchConsoleSummarySerializer
 from .services import monthly_report
+from .xlsx import render_monthly_report_xlsx
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -28,6 +29,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             "apply_template",
             "monthly_report_view",
             "monthly_report_pdf",
+            "monthly_report_xlsx",
             "search_console_view",
         ):
             return [IsAuthenticated()]
@@ -117,6 +119,22 @@ class ProjectViewSet(viewsets.ModelViewSet):
         pdf_bytes = render_monthly_report_pdf(data)
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         filename = f"report-{project.id}-{data['period_start']:%Y-%m}.pdf"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    @action(detail=True, methods=["get"], url_path="monthly-report/xlsx")
+    def monthly_report_xlsx(self, request, pk=None):
+        """A stripped-down Excel version of the report: task title + its
+        estimated hours only, one row each — for handing to someone who
+        just wants "what was done" without the internal numbers."""
+        project = self.get_object()
+        data = self._report_for_request(request, project)
+        xlsx_bytes = render_monthly_report_xlsx(data)
+        response = HttpResponse(
+            xlsx_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        filename = f"report-{project.id}-{data['period_start']:%Y-%m}.xlsx"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 

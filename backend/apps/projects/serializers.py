@@ -63,6 +63,7 @@ class CompletedTaskReportSerializer(serializers.Serializer):
     category_name = serializers.CharField(allow_null=True)
     category_group = serializers.CharField(allow_null=True)
     completed_at = serializers.DateTimeField()
+    estimated_hours = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True)
     value_generated = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
 
 

@@ -26,3 +26,19 @@ export function formatDate(value: string | null | undefined): string {
     new Date(value),
   )
 }
+
+/** For a finished task: how much faster the real (timer-logged) hours came
+ * in under the estimate, as a ready-to-show label — or null when there's
+ * nothing to brag about (no estimate, no time logged, or it ran over). */
+export function fasterThanEstimateLabel(
+  actualHours: number | string | null | undefined,
+  estimatedHours: number | string | null | undefined,
+): string | null {
+  const actual = typeof actualHours === 'string' ? parseFloat(actualHours) : actualHours
+  const estimated = typeof estimatedHours === 'string' ? parseFloat(estimatedHours) : estimatedHours
+  if (!actual || !estimated || Number.isNaN(actual) || Number.isNaN(estimated)) return null
+  if (actual >= estimated) return null
+  const percent = Math.round((1 - actual / estimated) * 100)
+  if (percent <= 0) return null
+  return `٪${percent} سریع‌تر از تخمین`
+}
