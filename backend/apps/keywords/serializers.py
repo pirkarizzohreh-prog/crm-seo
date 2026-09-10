@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.core.validators import normalize_url
+
 from .models import ContentBrief, Keyword, KeywordRankHistory
 
 
@@ -13,6 +15,9 @@ class KeywordSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source="project.name", read_only=True)
     rank_gap = serializers.IntegerField(read_only=True)
     history = KeywordRankHistorySerializer(many=True, read_only=True)
+
+    def validate_url(self, value):
+        return normalize_url(value)
 
     class Meta:
         model = Keyword

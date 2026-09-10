@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2, Users2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
+import { FormError } from '../components/FormError'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
@@ -215,6 +216,7 @@ export function ClientsPage() {
                 rows={3}
               />
             </div>
+            <FormError error={save.error} />
             <button type="submit" disabled={save.isPending} className="btn-primary w-full">
               ذخیره
             </button>

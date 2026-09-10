@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Clock, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { FormError } from '../components/FormError'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
@@ -148,6 +149,7 @@ export function TimeTrackerPage() {
                 rows={2}
               />
             </div>
+            <FormError error={create.error} />
             <button type="submit" disabled={create.isPending} className="btn-primary w-full">
               ذخیره
             </button>

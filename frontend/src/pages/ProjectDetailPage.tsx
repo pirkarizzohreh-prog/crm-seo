@@ -3,6 +3,7 @@ import { ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Plus, TrendingUp }
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
+import { FormError } from '../components/FormError'
 import { KeywordsPanel } from '../components/KeywordsPanel'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
@@ -307,6 +308,7 @@ export function ProjectDetailPage() {
                 rows={2}
               />
             </div>
+            <FormError error={saveTask.error} />
             <button type="submit" disabled={saveTask.isPending} className="btn-primary w-full">
               ذخیره
             </button>

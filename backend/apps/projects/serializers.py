@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.core.validators import normalize_url
+
 from .models import Project
 from .services import project_financials
 
@@ -21,6 +23,9 @@ class ProjectFinancialsSerializer(serializers.Serializer):
 class ProjectSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source="client.name", read_only=True)
     financials = serializers.SerializerMethodField()
+
+    def validate_website(self, value):
+        return normalize_url(value)
 
     class Meta:
         model = Project

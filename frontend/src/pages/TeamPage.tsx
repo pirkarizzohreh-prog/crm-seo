@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '../components/Badge'
+import { FormError } from '../components/FormError'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
@@ -177,6 +178,7 @@ export function TeamPage() {
                 />
               </div>
             </div>
+            <FormError error={save.error} />
             <button type="submit" disabled={save.isPending} className="btn-primary w-full">
               ذخیره
             </button>

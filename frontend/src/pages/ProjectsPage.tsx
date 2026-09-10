@@ -3,6 +3,7 @@ import { Briefcase, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
+import { FormError } from '../components/FormError'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { api } from '../lib/api'
@@ -141,6 +142,7 @@ export function ProjectsPage() {
           clients={clients?.results ?? []}
           onSave={(p) => save.mutate(p)}
           saving={save.isPending}
+          error={save.error}
         />
       )}
     </div>
@@ -153,12 +155,14 @@ function ProjectFormModal({
   clients,
   onSave,
   saving,
+  error,
 }: {
   editing: ProjectForm
   setEditing: (p: ProjectForm | null) => void
   clients: Client[]
   onSave: (p: ProjectForm) => void
   saving: boolean
+  error: unknown
 }) {
   const isHourly = editing.billing_type === 'hourly'
 
@@ -353,6 +357,7 @@ function ProjectFormModal({
           />
         </div>
 
+        <FormError error={error} />
         <button type="submit" disabled={saving} className="btn-primary w-full">
           ذخیره
         </button>

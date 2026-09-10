@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { formatNumber } from '../lib/format'
 import type { Keyword, Paginated } from '../types'
 import { ContentBriefModal } from './ContentBriefModal'
+import { FormError } from './FormError'
 import { EmptyState } from './Layout'
 import { Modal } from './Modal'
 
@@ -206,6 +207,7 @@ export function KeywordsPanel({ projectId }: { projectId: number }) {
                 rows={2}
               />
             </div>
+            <FormError error={save.error} />
             <button type="submit" disabled={save.isPending} className="btn-primary w-full">
               ذخیره
             </button>

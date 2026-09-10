@@ -1,11 +1,16 @@
 from rest_framework import serializers
 
+from apps.core.validators import normalize_url
+
 from .models import TimeEntry, TimerSession
 
 
 class TimeEntrySerializer(serializers.ModelSerializer):
     task_title = serializers.CharField(source="task.title", read_only=True)
     project_name = serializers.CharField(source="task.project.name", read_only=True)
+
+    def validate_url(self, value):
+        return normalize_url(value)
 
     class Meta:
         model = TimeEntry
