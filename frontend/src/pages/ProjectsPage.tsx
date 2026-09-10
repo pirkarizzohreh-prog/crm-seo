@@ -11,6 +11,8 @@ import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
 import {
   billingTypeLabels,
+  deliveryStatusColors,
+  deliveryStatusLabels,
   priorityColors,
   priorityLabels,
   profitabilityColors,
@@ -112,9 +114,28 @@ export function ProjectsPage() {
               </div>
               <div className="mb-2 text-xs text-slate-500">{project.client_name}</div>
               <div className="mb-3 flex flex-wrap gap-1.5">
+                <Badge
+                  label={deliveryStatusLabels[project.delivery_status.status]}
+                  className={deliveryStatusColors[project.delivery_status.status]}
+                />
                 <Badge label={priorityLabels[project.priority]} className={priorityColors[project.priority]} />
                 <Badge label={projectStatusLabels[project.status]} />
                 <Badge label={billingTypeLabels[project.billing_type]} className="bg-slate-100 text-slate-600" />
+              </div>
+              <div className="mb-3">
+                <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+                  <span>پیشرفت</span>
+                  <span className="font-medium text-slate-700">
+                    {project.delivery_status.progress_percent}٪ ({project.delivery_status.completed_tasks} از{' '}
+                    {project.delivery_status.total_tasks} تسک)
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-brand-500"
+                    style={{ width: `${project.delivery_status.progress_percent}%` }}
+                  />
+                </div>
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
                 <span className="font-semibold text-slate-900">

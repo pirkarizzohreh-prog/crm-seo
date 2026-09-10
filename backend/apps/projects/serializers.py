@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.core.validators import normalize_url
 
 from .models import Project
-from .services import project_financials
+from .services import project_delivery_status, project_financials
 
 
 class ProjectFinancialsSerializer(serializers.Serializer):
@@ -20,9 +20,19 @@ class ProjectFinancialsSerializer(serializers.Serializer):
     profitability_status = serializers.CharField()
 
 
+class DeliveryStatusSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    progress_percent = serializers.IntegerField()
+    total_tasks = serializers.IntegerField()
+    completed_tasks = serializers.IntegerField()
+    due_tasks = serializers.IntegerField()
+    completed_due_tasks = serializers.IntegerField()
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source="client.name", read_only=True)
     financials = serializers.SerializerMethodField()
+    delivery_status = serializers.SerializerMethodField()
 
     def validate_website(self, value):
         return normalize_url(value)
@@ -48,10 +58,14 @@ class ProjectSerializer(serializers.ModelSerializer):
             "estimated_monthly_hours",
             "search_console_site_url",
             "financials",
+            "delivery_status",
             "created_at",
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_delivery_status(self, obj):
+        return DeliveryStatusSerializer(project_delivery_status(obj)).data
 
     def get_financials(self, obj):
         return ProjectFinancialsSerializer(project_financials(obj)).data

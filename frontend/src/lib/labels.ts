@@ -86,6 +86,18 @@ export const roleLabels: Record<string, string> = {
   client: 'کاربر پورتال مشتری',
 }
 
+export const deliveryStatusLabels: Record<string, string> = {
+  on_track: '🟢 طبق برنامه',
+  at_risk: '🟡 در خطر',
+  behind: '🔴 عقب‌افتاده',
+}
+
+export const deliveryStatusColors: Record<string, string> = {
+  on_track: 'bg-emerald-100 text-emerald-700',
+  at_risk: 'bg-amber-100 text-amber-700',
+  behind: 'bg-rose-100 text-rose-700',
+}
+
 export const profitabilityColors: Record<string, string> = {
   profitable: 'bg-emerald-100 text-emerald-700',
   balanced: 'bg-sky-100 text-sky-700',

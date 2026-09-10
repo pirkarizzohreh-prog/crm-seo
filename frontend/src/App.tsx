@@ -8,6 +8,7 @@ import { ClientDetailPage } from './pages/ClientDetailPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { OverviewPage } from './pages/OverviewPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { TaskTemplatesPage } from './pages/TaskTemplatesPage'
@@ -43,6 +44,7 @@ export default function App() {
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/clients/:id" element={<ClientDetailPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/overview" element={<OverviewPage />} />
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/templates" element={<TaskTemplatesPage />} />

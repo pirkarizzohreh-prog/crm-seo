@@ -171,3 +171,48 @@ def monthly_report(project: Project, year: int, month: int) -> dict:
         "contract_amount": project.revenue_amount,
         "task_count": completed_tasks.count(),
     }
+
+
+# --- Delivery status (traffic-light overview) ----------------------------
+# An automatic 🟢/🟡/🔴 read on whether a project is on track, based only
+# on the tasks whose deadline has actually arrived: of those, what
+# percentage got done? Not a manual "I feel like this is going okay" call.
+
+DELIVERY_ON_TRACK = "on_track"
+DELIVERY_AT_RISK = "at_risk"
+DELIVERY_BEHIND = "behind"
+
+
+def project_delivery_status(project: Project) -> dict:
+    from apps.tasks.models import Task
+
+    today = timezone.localdate()
+    tasks = project.tasks.all()
+    total = tasks.count()
+    completed = tasks.filter(status=Task.Status.DONE).count()
+    progress_percent = round(100 * completed / total) if total else 0
+
+    due_tasks = tasks.filter(deadline__isnull=False, deadline__lte=today)
+    due_count = due_tasks.count()
+    completed_due_count = due_tasks.filter(status=Task.Status.DONE).count()
+
+    if due_count == 0:
+        # Nothing has come due yet — no evidence of falling behind.
+        status = DELIVERY_ON_TRACK
+    else:
+        on_time_rate = completed_due_count / due_count
+        if on_time_rate >= 0.8:
+            status = DELIVERY_ON_TRACK
+        elif on_time_rate >= 0.5:
+            status = DELIVERY_AT_RISK
+        else:
+            status = DELIVERY_BEHIND
+
+    return {
+        "status": status,
+        "progress_percent": progress_percent,
+        "total_tasks": total,
+        "completed_tasks": completed,
+        "due_tasks": due_count,
+        "completed_due_tasks": completed_due_count,
+    }

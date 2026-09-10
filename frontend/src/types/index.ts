@@ -46,6 +46,17 @@ export interface ProjectFinancials {
   profitability_status: 'profitable' | 'balanced' | 'low_margin' | 'losing' | 'unknown'
 }
 
+export type DeliveryStatusValue = 'on_track' | 'at_risk' | 'behind'
+
+export interface DeliveryStatus {
+  status: DeliveryStatusValue
+  progress_percent: number
+  total_tasks: number
+  completed_tasks: number
+  due_tasks: number
+  completed_due_tasks: number
+}
+
 export interface Project {
   id: number
   client: number
@@ -65,6 +76,7 @@ export interface Project {
   estimated_monthly_hours: string | null
   search_console_site_url: string
   financials: ProjectFinancials
+  delivery_status: DeliveryStatus
   created_at: string
   updated_at: string
 }
