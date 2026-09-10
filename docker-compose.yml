@@ -52,4 +52,10 @@ services:
       - /app/node_modules
 
 volumes:
+  # Pinned to a fixed name (instead of the default "<folder-name>_db_data")
+  # so the database always survives moving/renaming/re-cloning this project
+  # folder — Compose otherwise derives the volume name from the folder it's
+  # run from, and a rename silently creates a brand-new empty database.
   db_data:
+    external: true
+    name: crm-seo-claude-seo-project-crm-vdgc47_db_data
