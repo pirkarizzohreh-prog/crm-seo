@@ -43,6 +43,7 @@ export interface ProjectFinancials {
   logged_hours: string
   variance_hours: string | null
   effective_hourly_rate: string | null
+  earned_from_hours: string | null
   profitability_status: 'profitable' | 'balanced' | 'low_margin' | 'losing' | 'unknown'
 }
 

@@ -17,6 +17,7 @@ class ProjectFinancialsSerializer(serializers.Serializer):
     effective_hourly_rate = serializers.DecimalField(
         max_digits=12, decimal_places=2, allow_null=True
     )
+    earned_from_hours = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
     profitability_status = serializers.CharField()
 
 

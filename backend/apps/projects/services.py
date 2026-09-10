@@ -57,6 +57,7 @@ class ProjectFinancials:
     logged_hours: Decimal
     variance_hours: Optional[Decimal]
     effective_hourly_rate: Optional[Decimal]
+    earned_from_hours: Optional[Decimal]
     profitability_status: str
 
 
@@ -75,6 +76,15 @@ def project_financials(
     effective_hourly_rate = None
     if revenue_amount is not None and logged_hours:
         effective_hourly_rate = round(revenue_amount / logged_hours, 2)
+
+    # "به ازای ساعت‌هایی که کار کردم چقدر درآمد داشتم؟" — hours actually
+    # logged this month valued at the project's own target hourly rate.
+    # For HOURLY billing this *is* the invoiced amount; for fixed/retainer
+    # it's a sanity check against the fixed budget (are you over/under
+    # delivering relative to what your time is worth?).
+    earned_from_hours = None
+    if project.hourly_rate:
+        earned_from_hours = round(logged_hours * project.hourly_rate, 2)
 
     status = ProfitabilityStatus.UNKNOWN
     if capacity_hours and estimated_hours is not None:
@@ -96,6 +106,7 @@ def project_financials(
         logged_hours=logged_hours,
         variance_hours=variance_hours,
         effective_hourly_rate=effective_hourly_rate,
+        earned_from_hours=earned_from_hours,
         profitability_status=status,
     )
 

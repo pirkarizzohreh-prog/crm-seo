@@ -144,6 +144,13 @@ export function ProjectDetailPage() {
         />
         <StatCard title="ساعت ثبت‌شده این ماه" value={formatHours(f.logged_hours)} icon={ClipboardList} />
         <StatCard
+          title="درآمد بر اساس ساعت کاری"
+          value={formatToman(f.earned_from_hours)}
+          icon={Coins}
+          subtitle={f.earned_from_hours ? `${formatHours(f.logged_hours)} × نرخ ساعتی هدف` : 'نرخ ساعتی هدف را در پروژه ثبت کنید'}
+          tone="success"
+        />
+        <StatCard
           title="وضعیت سودآوری"
           icon={Gauge}
           value={
