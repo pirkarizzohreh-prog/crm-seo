@@ -41,8 +41,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="apply-template")
     def apply_template(self, request, pk=None):
-        """Bulk-create tasks on this project from a TaskTemplate (module 5)."""
+        """Bulk-create tasks on this project from a TaskTemplate (module 5).
+
+        Optionally schedules each task's deadline: pass ``start_date`` (the
+        first working day) and ``hours_per_day`` (how much of this project
+        you'll work on per day) and every task gets a real deadline spread
+        across working days (Fridays skipped) at that pace, in template
+        order — so the whole plan shows up on the calendar/dashboard
+        immediately instead of everything being due "today".
+        """
+        from datetime import date as date_cls
+        from decimal import Decimal, InvalidOperation
+
         from apps.tasks.models import Task, TaskTemplate
+        from apps.tasks.services import spread_deadlines
 
         project = self.get_object()
         template_id = request.data.get("template_id")
@@ -52,6 +64,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if template is None:
             return Response({"detail": "Template not found."}, status=404)
 
+        items = list(template.items.all())
+        deadlines: list[date_cls | None] = [None] * len(items)
+        start_date_raw = request.data.get("start_date")
+        hours_per_day_raw = request.data.get("hours_per_day")
+        if start_date_raw and hours_per_day_raw:
+            try:
+                start_date = date_cls.fromisoformat(start_date_raw)
+                hours_per_day = Decimal(str(hours_per_day_raw))
+            except (ValueError, InvalidOperation):
+                return Response({"detail": "تاریخ شروع یا ساعت کاری در روز نامعتبر است."}, status=400)
+            if hours_per_day > 0:
+                deadlines = spread_deadlines(
+                    [item.estimated_hours for item in items], start_date, hours_per_day
+                )
+
         created = Task.objects.bulk_create(
             [
                 Task(
@@ -59,8 +86,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     title=item.title,
                     category=item.category,
                     estimated_hours=item.estimated_hours,
+                    deadline=deadlines[i],
                 )
-                for item in template.items.all()
+                for i, item in enumerate(items)
             ]
         )
         from apps.tasks.serializers import TaskSerializer

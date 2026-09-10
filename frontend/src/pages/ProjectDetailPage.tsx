@@ -34,6 +34,8 @@ export function ProjectDetailPage() {
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
   const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'search-console'>('tasks')
   const [applyingTemplate, setApplyingTemplate] = useState(false)
+  const [templateStartDate, setTemplateStartDate] = useState('')
+  const [templateHoursPerDay, setTemplateHoursPerDay] = useState('3')
 
   const { data: project } = useQuery<Project>({
     queryKey: ['projects', id],
@@ -78,7 +80,15 @@ export function ProjectDetailPage() {
 
   const applyTemplate = useMutation({
     mutationFn: (templateId: number) =>
-      api.post(`/projects/${id}/apply-template/`, { template_id: templateId }),
+      api.post(`/projects/${id}/apply-template/`, {
+        template_id: templateId,
+        // Optional — when set, the backend spreads a real deadline across
+        // each task (working days, Fridays skipped) instead of leaving
+        // them all with no due date.
+        ...(templateStartDate && templateHoursPerDay
+          ? { start_date: templateStartDate, hours_per_day: templateHoursPerDay }
+          : {}),
+      }),
     onSuccess: () => {
       invalidateTasks()
       setApplyingTemplate(false)
@@ -322,26 +332,52 @@ export function ProjectDetailPage() {
               هنوز قالبی نساخته‌اید. از صفحه‌ی «قالب‌های تسک» یکی بسازید.
             </p>
           ) : (
-            <ul className="space-y-2">
-              {templates.results.map((tpl) => (
-                <li
-                  key={tpl.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 p-3"
-                >
+            <>
+              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs text-slate-500">
+                  اختیاری — اگه پر کنید، برای هر تسک یک موعد واقعی محاسبه و ثبت می‌شود (روزهای کاری،
+                  بدون جمعه) تا در تقویم و داشبورد دیده شوند.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-sm font-medium text-slate-900">{tpl.name}</div>
-                    <div className="text-xs text-slate-500">{tpl.items.length} تسک</div>
+                    <label className="field-label">تاریخ شروع</label>
+                    <JalaliDateInput value={templateStartDate} onChange={setTemplateStartDate} />
                   </div>
-                  <button
-                    onClick={() => applyTemplate.mutate(tpl.id)}
-                    disabled={applyTemplate.isPending}
-                    className="btn-secondary !px-3 !py-1.5 text-xs"
+                  <div>
+                    <label className="field-label">ساعت کاری در روز برای این پروژه</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0.5"
+                      value={templateHoursPerDay}
+                      onChange={(e) => setTemplateHoursPerDay(e.target.value)}
+                      className="field-input ltr-nums"
+                    />
+                  </div>
+                </div>
+              </div>
+              <FormError error={applyTemplate.error} />
+              <ul className="space-y-2">
+                {templates.results.map((tpl) => (
+                  <li
+                    key={tpl.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 p-3"
                   >
-                    اعمال
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">{tpl.name}</div>
+                      <div className="text-xs text-slate-500">{tpl.items.length} تسک</div>
+                    </div>
+                    <button
+                      onClick={() => applyTemplate.mutate(tpl.id)}
+                      disabled={applyTemplate.isPending}
+                      className="btn-secondary !px-3 !py-1.5 text-xs"
+                    >
+                      اعمال
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </Modal>
       )}
