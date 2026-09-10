@@ -153,6 +153,7 @@ export interface ProjectHealth {
 
 export interface DashboardData {
   today_tasks: Task[]
+  overdue_tasks: Task[]
   capacity: CapacitySummary
   revenue: RevenueSummary
   project_health: ProjectHealth[]

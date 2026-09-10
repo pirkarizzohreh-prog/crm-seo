@@ -71,6 +71,43 @@ def recommended_tasks(user, limit: int = 10):
     return [task for _score, task in scored[:limit]], {t.id: s for s, t in scored}
 
 
+def _scope_to_assignee(qs, user):
+    if not user.is_owner:
+        qs = qs.filter(Q(assignee=user) | Q(assignee__isnull=True))
+    return qs
+
+
+def today_tasks(user, limit: int = 20):
+    """Strictly what's due *today* — not the broader smart-priority mix
+    ``recommended_tasks`` builds (which also surfaces overdue/soon/no-deadline
+    work). The dashboard's "پیشنهاد امروز" card wants exactly today's date."""
+    today = timezone.localdate()
+    qs = _scope_to_assignee(
+        Task.objects.filter(project__owner=user.effective_owner, deadline=today).exclude(
+            status=Task.Status.DONE
+        ),
+        user,
+    )
+    tasks = list(qs.select_related("project", "category"))
+    scored = [(task_priority_score(t, today), t) for t in tasks]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [task for _score, task in scored[:limit]], {t.id: s for s, t in scored}
+
+
+def overdue_tasks(user, limit: int = 20):
+    """Not-done tasks whose deadline has already passed — the "این‌ها رو
+    جا انداختی" list, separate from today's plan."""
+    today = timezone.localdate()
+    qs = _scope_to_assignee(
+        Task.objects.filter(project__owner=user.effective_owner, deadline__lt=today).exclude(
+            status=Task.Status.DONE
+        ),
+        user,
+    )
+    tasks = list(qs.select_related("project", "category").order_by("deadline"))
+    return tasks[:limit]
+
+
 # --- Capacity planning (module 8) ---------------------------------------
 
 

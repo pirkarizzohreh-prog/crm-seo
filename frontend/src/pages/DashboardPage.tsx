@@ -38,7 +38,13 @@ export function DashboardPage() {
     return <p className="text-sm text-slate-500">در حال بارگذاری...</p>
   }
 
-  const { capacity, revenue, project_health: projectHealth, today_tasks: todayTasks } = data
+  const {
+    capacity,
+    revenue,
+    project_health: projectHealth,
+    today_tasks: todayTasks,
+    overdue_tasks: overdueTasks,
+  } = data
 
   return (
     <div>
@@ -90,7 +96,7 @@ export function DashboardPage() {
           {todayTasks.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}
-              title="کاری برای امروز پیشنهاد نشده — یا همه‌چیز تمام شده، یا هنوز تسکی ثبت نکرده‌اید."
+              title="هیچ تسکی با موعد امروز ندارید."
             />
           ) : (
             <ul className="space-y-2">
@@ -139,8 +145,34 @@ export function DashboardPage() {
           )}
         </div>
 
-        <div>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">وضعیت سلامت پروژه‌ها</h2>
+        <div className="space-y-6">
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-rose-700">
+              تسک‌های عقب‌افتاده ({overdueTasks.length})
+            </h2>
+            {overdueTasks.length === 0 ? (
+              <EmptyState icon={CheckCircle2} title="هیچ تسک عقب‌افتاده‌ای ندارید." />
+            ) : (
+              <ul className="space-y-2">
+                {overdueTasks.map((task) => (
+                  <li key={task.id} className="card border-rose-200 bg-rose-50/40 p-3">
+                    <Link
+                      to={`/projects/${task.project}`}
+                      className="text-sm font-medium text-slate-900 hover:text-brand-600 hover:underline"
+                    >
+                      {task.title}
+                    </Link>
+                    <div className="mt-1 text-xs text-rose-600">
+                      موعد: {formatDate(task.deadline)} · {task.project_name}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">وضعیت سلامت پروژه‌ها</h2>
           {projectHealth.length === 0 ? (
             <EmptyState icon={AlertTriangle} title="پروژه فعالی وجود ندارد." />
           ) : (
@@ -174,6 +206,7 @@ export function DashboardPage() {
               ))}
             </ul>
           )}
+          </div>
         </div>
       </div>
     </div>
