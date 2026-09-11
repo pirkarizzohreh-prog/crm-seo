@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock, Plus } from 'lucide-react'
+import { Clock, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { FormError } from '../components/FormError'
 import { JalaliDateInput } from '../components/JalaliDateInput'
@@ -10,6 +10,7 @@ import { formatDate, formatHours } from '../lib/format'
 import type { Paginated, Task, TimeEntry } from '../types'
 
 type EntryForm = {
+  id?: number
   task?: number
   date: string
   duration_hours: string
@@ -33,13 +34,24 @@ export function TimeTrackerPage() {
     queryFn: async () => (await api.get('/tasks/')).data,
   })
 
-  const create = useMutation({
-    mutationFn: (entry: EntryForm) => api.post('/time/entries/', entry),
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['time-entries'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  }
+
+  const save = useMutation({
+    mutationFn: (entry: EntryForm) =>
+      entry.id ? api.patch(`/time/entries/${entry.id}/`, entry) : api.post('/time/entries/', entry),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      invalidate()
       setAdding(null)
     },
+  })
+
+  const remove = useMutation({
+    mutationFn: (id: number) => api.delete(`/time/entries/${id}/`),
+    onSuccess: invalidate,
   })
 
   const totalHours =
@@ -75,6 +87,7 @@ export function TimeTrackerPage() {
                 <th className="px-4 py-3 text-start">پروژه</th>
                 <th className="px-4 py-3 text-start">مدت</th>
                 <th className="px-4 py-3 text-start">یادداشت</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -85,6 +98,32 @@ export function TimeTrackerPage() {
                   <td className="px-4 py-3 text-slate-500">{entry.project_name}</td>
                   <td className="px-4 py-3 text-slate-600">{formatHours(entry.duration_hours)}</td>
                   <td className="px-4 py-3 text-slate-500">{entry.notes || '—'}</td>
+                  <td className="px-4 py-3 text-end">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() =>
+                          setAdding({
+                            id: entry.id,
+                            task: entry.task,
+                            date: entry.date,
+                            duration_hours: entry.duration_hours,
+                            notes: entry.notes,
+                          })
+                        }
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('این ثبت زمان حذف شود؟')) remove.mutate(entry.id)
+                        }}
+                        className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -93,11 +132,11 @@ export function TimeTrackerPage() {
       )}
 
       {adding && (
-        <Modal title="ثبت دستی زمان" onClose={() => setAdding(null)}>
+        <Modal title={adding.id ? 'ویرایش ثبت زمان' : 'ثبت دستی زمان'} onClose={() => setAdding(null)}>
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              create.mutate(adding)
+              save.mutate(adding)
             }}
             className="space-y-3"
           >
@@ -145,8 +184,8 @@ export function TimeTrackerPage() {
                 rows={2}
               />
             </div>
-            <FormError error={create.error} />
-            <button type="submit" disabled={create.isPending} className="btn-primary w-full">
+            <FormError error={save.error} />
+            <button type="submit" disabled={save.isPending} className="btn-primary w-full">
               ذخیره
             </button>
           </form>
