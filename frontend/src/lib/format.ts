@@ -20,6 +20,24 @@ export function formatHours(value: number | string | null | undefined): string {
   return formatted === '—' ? formatted : `${formatted} ساعت`
 }
 
+// The API's year/month query params (monthly report, payments) are plain
+// Gregorian (Python's calendar.monthrange) — these are Gregorian month
+// names, not Jalali ones ("فروردین" etc.), which would mislabel the period.
+export const gregorianMonthNames = [
+  'ژانویه',
+  'فوریه',
+  'مارس',
+  'آوریل',
+  'مه',
+  'ژوئن',
+  'ژوئیه',
+  'اوت',
+  'سپتامبر',
+  'اکتبر',
+  'نوامبر',
+  'دسامبر',
+]
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
   return new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(

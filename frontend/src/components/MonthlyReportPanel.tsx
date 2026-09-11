@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarRange, CheckCircle2, FileBarChart, FileDown, FileSpreadsheet, NotebookText } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { formatDate, formatHours, formatToman } from '../lib/format'
+import { formatDate, formatHours, formatToman, gregorianMonthNames } from '../lib/format'
 import { EmptyState } from './Layout'
 import { StatCard } from './StatCard'
 
@@ -24,21 +24,6 @@ interface MonthlyReport {
   contract_amount: string | null
   task_count: number
 }
-
-const monthNames = [
-  'فروردین',
-  'اردیبهشت',
-  'خرداد',
-  'تیر',
-  'مرداد',
-  'شهریور',
-  'مهر',
-  'آبان',
-  'آذر',
-  'دی',
-  'بهمن',
-  'اسفند',
-]
 
 export function MonthlyReportPanel({ projectId }: { projectId: number }) {
   const now = new Date()
@@ -92,7 +77,7 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
-                {monthNames[m - 1]}
+                {gregorianMonthNames[m - 1]}
               </option>
             ))}
           </select>

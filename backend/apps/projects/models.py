@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.clients.models import Client
 
@@ -122,3 +123,25 @@ class Project(models.Model):
         if amount is None or not self.hourly_rate:
             return None
         return round(amount / self.hourly_rate, 2)
+
+
+class Payment(models.Model):
+    """A real payment actually received for a project (module: financial
+    tracking) — separate from ``revenue_amount``/``hourly_rate``, which are
+    what the project is *supposed* to earn. Lets the strategist see, per
+    project, what was actually collected and when, against that target."""
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="payments")
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    received_on = models.DateField(default=timezone.localdate)
+    notes = models.CharField(
+        max_length=255, blank=True, help_text="مثلاً «قسط اول»، «تسویه نهایی»، شماره فاکتور و..."
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-received_on", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.project} — {self.amount} on {self.received_on}"

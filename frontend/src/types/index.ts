@@ -276,6 +276,25 @@ export interface Me {
   working_days_per_month: number
 }
 
+export interface Payment {
+  id: number
+  project: number
+  project_name: string
+  amount: string
+  received_on: string
+  notes: string
+  created_at: string
+}
+
+export interface PaymentSummary {
+  period_start: string
+  period_end: string
+  expected_contract_amount: string | null
+  expected_from_hours: string | null
+  period_received: string
+  total_received_all_time: string
+}
+
 export interface TeamMember {
   id: number
   username: string

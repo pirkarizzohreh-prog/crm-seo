@@ -18,7 +18,7 @@ from django.utils import timezone
 
 from apps.timetracking.models import TimeEntry
 
-from .models import Project
+from .models import Payment, Project
 
 
 def current_month_range(today: Optional[date] = None) -> tuple[date, date]:
@@ -226,4 +226,35 @@ def project_delivery_status(project: Project) -> dict:
         "completed_tasks": completed,
         "due_tasks": due_count,
         "completed_due_tasks": completed_due_count,
+    }
+
+
+# --- Payments (expected vs. actually received) ---------------------------
+
+
+def payment_summary(project: Project, year: int | None = None, month: int | None = None) -> dict:
+    """"چه مبلغی قرار بوده بدست بیارم" vs "چقدر و کِی واقعاً گرفتم" — the two
+    "expected" figures already tracked elsewhere (the flat contract amount,
+    and hours worked × target rate) next to what was actually logged as
+    received, for a given month and all-time."""
+    start, end = month_range(year, month) if year and month else current_month_range()
+
+    financials = project_financials(project, start, end)
+    period_received = (
+        Payment.objects.filter(project=project, received_on__gte=start, received_on__lte=end).aggregate(
+            total=Sum("amount")
+        )["total"]
+        or Decimal("0")
+    )
+    total_received_all_time = (
+        Payment.objects.filter(project=project).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    )
+
+    return {
+        "period_start": start,
+        "period_end": end,
+        "expected_contract_amount": financials.revenue_amount,
+        "expected_from_hours": financials.earned_from_hours,
+        "period_received": period_received,
+        "total_received_all_time": total_received_all_time,
     }

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.validators import normalize_url
 
-from .models import Project
+from .models import Payment, Project
 from .services import project_delivery_status, project_financials
 
 
@@ -133,3 +133,21 @@ class SearchConsoleSummarySerializer(serializers.Serializer):
     average_position = serializers.FloatField()
     top_queries = SearchConsoleQueryRowSerializer(many=True)
     top_pages = SearchConsolePageRowSerializer(many=True)
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source="project.name", read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = ("id", "project", "project_name", "amount", "received_on", "notes", "created_at")
+        read_only_fields = ("id", "created_at")
+
+
+class PaymentSummarySerializer(serializers.Serializer):
+    period_start = serializers.DateField()
+    period_end = serializers.DateField()
+    expected_contract_amount = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
+    expected_from_hours = serializers.DecimalField(max_digits=14, decimal_places=2, allow_null=True)
+    period_received = serializers.DecimalField(max_digits=14, decimal_places=2)
+    total_received_all_time = serializers.DecimalField(max_digits=14, decimal_places=2)

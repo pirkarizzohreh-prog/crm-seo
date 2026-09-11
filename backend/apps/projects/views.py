@@ -7,11 +7,17 @@ from rest_framework.response import Response
 
 from apps.core.permissions import IsOwnerOrReadOnly
 
-from .models import Project
+from .models import Payment, Project
 from .pdf import render_monthly_report_pdf
 from .search_console import SearchConsoleNotConfigured, get_search_console_summary
-from .serializers import MonthlyReportSerializer, ProjectSerializer, SearchConsoleSummarySerializer
-from .services import monthly_report
+from .serializers import (
+    MonthlyReportSerializer,
+    PaymentSerializer,
+    PaymentSummarySerializer,
+    ProjectSerializer,
+    SearchConsoleSummarySerializer,
+)
+from .services import monthly_report, payment_summary
 from .xlsx import render_monthly_report_xlsx
 
 
@@ -138,6 +144,17 @@ class ProjectViewSet(viewsets.ModelViewSet):
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
+    @action(detail=True, methods=["get"], url_path="payment-summary")
+    def payment_summary_view(self, request, pk=None):
+        """چه مبلغی قرار بوده بدست بیارم (قرارداد/ساعتی) در برابر چقدر
+        واقعاً دریافت شده — برای ماه انتخاب‌شده و مجموع کل عمر پروژه."""
+        project = self.get_object()
+        today = timezone.localdate()
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+        data = payment_summary(project, year, month)
+        return Response(PaymentSummarySerializer(data).data)
+
     @action(detail=True, methods=["get"], url_path="search-console")
     def search_console_view(self, request, pk=None):
         """Search Console summary for this project's site (module: GSC
@@ -151,3 +168,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except Exception as exc:  # Google API errors: auth/permissions/quota/...
             return Response({"detail": f"خطا در دریافت اطلاعات سرچ کنسول: {exc}"}, status=502)
         return Response(SearchConsoleSummarySerializer(summary.__dict__).data)
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    """Payments actually received for a project (module: financial
+    tracking) — Owner-only to write, same as Project/Client, since it's
+    real money in the bank rather than day-to-day work."""
+
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    filterset_fields = ["project"]
+    ordering_fields = ["received_on", "created_at"]
+
+    def get_queryset(self):
+        return Payment.objects.filter(project__owner=self.request.user.effective_owner).select_related(
+            "project"
+        )

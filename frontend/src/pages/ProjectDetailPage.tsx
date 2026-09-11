@@ -9,6 +9,7 @@ import { KeywordsPanel } from '../components/KeywordsPanel'
 import { EmptyState, PageHeader } from '../components/Layout'
 import { Modal } from '../components/Modal'
 import { MonthlyReportPanel } from '../components/MonthlyReportPanel'
+import { PaymentsPanel } from '../components/PaymentsPanel'
 import { SearchConsolePanel } from '../components/SearchConsolePanel'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
@@ -32,7 +33,7 @@ export function ProjectDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
-  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'search-console'>('tasks')
+  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'payments' | 'search-console'>('tasks')
   const [applyingTemplate, setApplyingTemplate] = useState(false)
   const [templateStartDate, setTemplateStartDate] = useState('')
   const [templateHoursPerDay, setTemplateHoursPerDay] = useState('3')
@@ -166,6 +167,7 @@ export function ProjectDetailPage() {
           { key: 'tasks', label: `تسک‌ها (${taskList.length})` },
           { key: 'keywords', label: 'کلمات کلیدی' },
           { key: 'report', label: 'گزارش ماهانه' },
+          { key: 'payments', label: 'دریافتی‌ها' },
           { key: 'search-console', label: 'سرچ کنسول' },
         ]}
         active={tab}
@@ -234,6 +236,7 @@ export function ProjectDetailPage() {
 
       {tab === 'keywords' && <KeywordsPanel projectId={Number(id)} />}
       {tab === 'report' && <MonthlyReportPanel projectId={Number(id)} />}
+      {tab === 'payments' && <PaymentsPanel projectId={Number(id)} />}
       {tab === 'search-console' && <SearchConsolePanel project={project} />}
 
       {editingTask && (
