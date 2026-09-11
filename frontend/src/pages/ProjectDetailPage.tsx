@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, TrendingUp } from 'lucide-react'
+import { Clock, ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
@@ -28,11 +28,14 @@ import type { Paginated, Project, Task, TaskCategory, TaskPriority, TaskStatus, 
 type TaskForm = Partial<Task>
 
 const emptyTaskForm: TaskForm = { title: '', priority: 'medium', status: 'todo' }
+const todayISO = new Date().toISOString().slice(0, 10)
 
 export function ProjectDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
+  const [loggingHoursFor, setLoggingHoursFor] = useState<Task | null>(null)
+  const [manualEntry, setManualEntry] = useState({ date: '', duration_hours: '', notes: '' })
   const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'payments' | 'search-console'>('tasks')
   const [applyingTemplate, setApplyingTemplate] = useState(false)
   const [templateStartDate, setTemplateStartDate] = useState('')
@@ -71,6 +74,16 @@ export function ProjectDetailPage() {
     mutationFn: ({ taskId, status }: { taskId: number; status: TaskStatus }) =>
       api.patch(`/tasks/${taskId}/`, { status }),
     onSuccess: invalidateTasks,
+  })
+
+  const logHours = useMutation({
+    mutationFn: () => api.post('/time/entries/', { task: loggingHoursFor?.id, ...manualEntry }),
+    onSuccess: () => {
+      invalidateTasks()
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['time-entries'] })
+      setLoggingHoursFor(null)
+    },
   })
 
   const startTimer = useMutation({
@@ -209,6 +222,16 @@ export function ProjectDetailPage() {
                     title="شروع تایمر روی این تسک"
                   >
                     <Play className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setManualEntry({ date: todayISO, duration_hours: '', notes: '' })
+                      setLoggingHoursFor(task)
+                    }}
+                    className="rounded-md p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600"
+                    title="ثبت دستی ساعت (بدون تایمر)"
+                  >
+                    <Clock className="h-4 w-4" />
                   </button>
                   <select
                     value={task.status}
@@ -410,6 +433,59 @@ export function ProjectDetailPage() {
               </ul>
             </>
           )}
+        </Modal>
+      )}
+
+      {loggingHoursFor && (
+        <Modal title="ثبت دستی ساعت" onClose={() => setLoggingHoursFor(null)}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              logHours.mutate()
+            }}
+            className="space-y-3"
+          >
+            <p className="text-sm text-slate-500">
+              برای تسک <span className="font-medium text-slate-900">{loggingHoursFor.title}</span> — این برای
+              کاری‌ست که بدون روشن کردن تایمر انجام دادید؛ به ساعت کارکرد این تسک اضافه می‌شود.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="field-label">تاریخ</label>
+                <JalaliDateInput
+                  required
+                  value={manualEntry.date}
+                  onChange={(iso) => setManualEntry({ ...manualEntry, date: iso })}
+                />
+              </div>
+              <div>
+                <label className="field-label">مدت (ساعت)</label>
+                <input
+                  required
+                  type="number"
+                  step="0.25"
+                  min="0.25"
+                  value={manualEntry.duration_hours}
+                  onChange={(e) => setManualEntry({ ...manualEntry, duration_hours: e.target.value })}
+                  className="field-input ltr-nums"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="field-label">یادداشت</label>
+              <textarea
+                value={manualEntry.notes}
+                onChange={(e) => setManualEntry({ ...manualEntry, notes: e.target.value })}
+                className="field-input"
+                rows={2}
+                placeholder="چه کاری انجام دادید؟"
+              />
+            </div>
+            <FormError error={logHours.error} />
+            <button type="submit" disabled={logHours.isPending} className="btn-primary w-full">
+              ثبت
+            </button>
+          </form>
         </Modal>
       )}
     </div>
