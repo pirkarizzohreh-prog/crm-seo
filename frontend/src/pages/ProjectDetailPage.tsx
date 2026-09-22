@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock, ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, TrendingUp } from 'lucide-react'
+import { Clock, ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, Trash2, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
@@ -72,6 +72,11 @@ export function ProjectDetailPage() {
   const setStatus = useMutation({
     mutationFn: ({ taskId, status }: { taskId: number; status: TaskStatus }) =>
       api.patch(`/tasks/${taskId}/`, { status }),
+    onSuccess: invalidateTasks,
+  })
+
+  const removeTask = useMutation({
+    mutationFn: (taskId: number) => api.delete(`/tasks/${taskId}/`),
     onSuccess: invalidateTasks,
   })
 
@@ -236,6 +241,17 @@ export function ProjectDetailPage() {
                     title="ویرایش"
                   >
                     <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`تسک «${task.title}» حذف شود؟ ساعت‌های ثبت‌شده روی آن هم حذف می‌شوند.`)) {
+                        removeTask.mutate(task.id)
+                      }
+                    }}
+                    className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                    title="حذف تسک"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </li>

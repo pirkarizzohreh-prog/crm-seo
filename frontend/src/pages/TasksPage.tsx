@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ListChecks, Play } from 'lucide-react'
+import { ListChecks, Play, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/Badge'
@@ -33,6 +33,11 @@ export function TasksPage() {
 
   const startTimer = useMutation({
     mutationFn: (taskId: number) => api.post('/time/timer/', { task: taskId }),
+    onSuccess: invalidate,
+  })
+
+  const removeTask = useMutation({
+    mutationFn: (taskId: number) => api.delete(`/tasks/${taskId}/`),
     onSuccess: invalidate,
   })
 
@@ -97,6 +102,17 @@ export function TasksPage() {
                     </option>
                   ))}
                 </select>
+                <button
+                  onClick={() => {
+                    if (confirm(`تسک «${task.title}» حذف شود؟ ساعت‌های ثبت‌شده روی آن هم حذف می‌شوند.`)) {
+                      removeTask.mutate(task.id)
+                    }
+                  }}
+                  className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                  title="حذف تسک"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </li>
           ))}
