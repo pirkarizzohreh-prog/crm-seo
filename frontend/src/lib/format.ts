@@ -15,9 +15,23 @@ export function formatToman(value: number | string | null | undefined): string {
   return `${numberFormatter.format(Math.round(num))} تومان`
 }
 
+// Decimal hours ("1.6 ساعت") reads as ambiguous — is that 1h6m or 1h60m? —
+// so every hours display goes through this to show "1 ساعت و 36 دقیقه"
+// instead, with no arithmetic left for the reader to do.
 export function formatHours(value: number | string | null | undefined): string {
-  const formatted = formatNumber(value, 1)
-  return formatted === '—' ? formatted : `${formatted} ساعت`
+  if (value === null || value === undefined || value === '') return '—'
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  if (Number.isNaN(num)) return '—'
+
+  const sign = num < 0 ? '-' : ''
+  const totalMinutes = Math.round(Math.abs(num) * 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (hours === 0 && minutes === 0) return '0 ساعت'
+  if (hours === 0) return `${sign}${minutes} دقیقه`
+  if (minutes === 0) return `${sign}${hours} ساعت`
+  return `${sign}${hours} ساعت و ${minutes} دقیقه`
 }
 
 // The API's year/month query params (monthly report, payments) are plain
