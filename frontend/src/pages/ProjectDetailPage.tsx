@@ -1,5 +1,8 @@
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock, ClipboardList, Coins, Gauge, LayoutTemplate, Pencil, Play, Plus, Trash2, TrendingUp } from 'lucide-react'
+import { ClipboardList, Coins, Gauge, LayoutTemplate, Plus, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Badge } from '../components/Badge'
@@ -11,19 +14,13 @@ import { Modal } from '../components/Modal'
 import { MonthlyReportPanel } from '../components/MonthlyReportPanel'
 import { PaymentsPanel } from '../components/PaymentsPanel'
 import { SearchConsolePanel } from '../components/SearchConsolePanel'
+import { SortableTaskRow } from '../components/SortableTaskRow'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
 import { TaskTimeEntriesModal } from '../components/TaskTimeEntriesModal'
 import { api } from '../lib/api'
-import { fasterThanEstimateLabel, formatDate, formatHours, formatToman } from '../lib/format'
-import {
-  priorityColors,
-  priorityLabels,
-  profitabilityColors,
-  profitabilityLabels,
-  taskStatusColors,
-  taskStatusLabels,
-} from '../lib/labels'
+import { formatHours, formatToman } from '../lib/format'
+import { priorityLabels, profitabilityColors, profitabilityLabels } from '../lib/labels'
 import type { Paginated, Project, Task, TaskCategory, TaskPriority, TaskStatus, TaskTemplate } from '../types'
 
 type TaskForm = Partial<Task>
@@ -80,6 +77,13 @@ export function ProjectDetailPage() {
     onSuccess: invalidateTasks,
   })
 
+  const reorderTasks = useMutation({
+    mutationFn: (orderedIds: number[]) => api.post('/tasks/reorder/', { ordered_ids: orderedIds }),
+    onSettled: invalidateTasks,
+  })
+
+  const dragSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
   const startTimer = useMutation({
     mutationFn: (taskId: number) => api.post('/time/timer/', { task: taskId }),
     onSuccess: () => {
@@ -115,6 +119,19 @@ export function ProjectDetailPage() {
 
   const f = project.financials
   const taskList = tasks?.results ?? []
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = taskList.findIndex((t) => t.id === active.id)
+    const newIndex = taskList.findIndex((t) => t.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+    const newOrder = arrayMove(taskList, oldIndex, newIndex)
+    queryClient.setQueryData<Paginated<Task>>(['tasks', { project: id }], (old) =>
+      old ? { ...old, results: newOrder } : old,
+    )
+    reorderTasks.mutate(newOrder.map((t) => t.id))
+  }
 
   return (
     <div>
@@ -187,76 +204,28 @@ export function ProjectDetailPage() {
         (taskList.length === 0 ? (
           <EmptyState icon={ClipboardList} title="هنوز تسکی برای این پروژه ثبت نشده است." />
         ) : (
-          <ul className="space-y-2">
-            {taskList.map((task) => (
-              <li key={task.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-slate-900">{task.title}</span>
-                    <Badge label={priorityLabels[task.priority]} className={priorityColors[task.priority]} />
-                    {task.category_name && (
-                      <Badge label={task.category_name} className="bg-slate-100 text-slate-600" />
-                    )}
-                    {task.status === 'done' &&
-                      (() => {
-                        const label = fasterThanEstimateLabel(task.actual_hours, task.estimated_hours)
-                        return label && <Badge label={label} className="bg-emerald-100 text-emerald-700" />
-                      })()}
-                  </div>
-                  <div className="mt-1 text-xs text-slate-500">
-                    {formatHours(task.actual_hours)} از {formatHours(task.estimated_hours)} تخمینی
-                    {task.deadline && ` · موعد: ${formatDate(task.deadline)}`}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={() => startTimer.mutate(task.id)}
-                    disabled={startTimer.isPending}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
-                    title="شروع تایمر روی این تسک"
-                  >
-                    <Play className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setLoggingHoursFor(task)}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600"
-                    title="ساعت‌های ثبت‌شده / ثبت دستی"
-                  >
-                    <Clock className="h-4 w-4" />
-                  </button>
-                  <select
-                    value={task.status}
-                    onChange={(e) => setStatus.mutate({ taskId: task.id, status: e.target.value as TaskStatus })}
-                    className={`rounded-md border-0 px-2 py-1 text-xs font-medium ${taskStatusColors[task.status]}`}
-                  >
-                    {Object.entries(taskStatusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => setEditingTask(task)}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                    title="ویرایش"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`تسک «${task.title}» حذف شود؟ ساعت‌های ثبت‌شده روی آن هم حذف می‌شوند.`)) {
-                        removeTask.mutate(task.id)
+          <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={taskList.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <ul className="space-y-2">
+                {taskList.map((task) => (
+                  <SortableTaskRow
+                    key={task.id}
+                    task={task}
+                    onStartTimer={(taskId) => startTimer.mutate(taskId)}
+                    startTimerPending={startTimer.isPending}
+                    onLogHours={setLoggingHoursFor}
+                    onStatusChange={(taskId, status) => setStatus.mutate({ taskId, status })}
+                    onEdit={setEditingTask}
+                    onDelete={(t) => {
+                      if (confirm(`تسک «${t.title}» حذف شود؟ ساعت‌های ثبت‌شده روی آن هم حذف می‌شوند.`)) {
+                        removeTask.mutate(t.id)
                       }
                     }}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                    title="حذف تسک"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         ))}
 
       {tab === 'keywords' && <KeywordsPanel projectId={Number(id)} />}

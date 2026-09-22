@@ -69,11 +69,14 @@ class TaskSerializer(serializers.ModelSerializer):
             "deadline",
             "recurrence",
             "value_generated",
+            "order",
             "completed_at",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "completed_at", "created_at", "updated_at")
+        # order is only ever changed via TaskViewSet.reorder (drag-and-drop),
+        # not through the normal create/edit form.
+        read_only_fields = ("id", "order", "completed_at", "created_at", "updated_at")
 
     def get_actual_hours(self, obj):
         return getattr(obj, "actual_hours", None) or 0

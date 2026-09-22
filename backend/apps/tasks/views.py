@@ -38,10 +38,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering_fields = ["deadline", "priority", "created_at"]
 
     def get_queryset(self):
+        # .annotate(Sum(...)) triggers a GROUP BY that silently drops the
+        # model's default Meta.ordering (qs.ordered becomes False) — order_by
+        # has to be re-stated explicitly or the list order is undefined.
         return (
             Task.objects.filter(project__owner=self.request.user.effective_owner)
             .select_related("project", "category", "assignee")
             .annotate(actual_hours=Sum("time_entries__duration_hours"))
+            .order_by("order", "deadline", "-priority")
         )
 
     @action(detail=False, methods=["get"])
@@ -52,3 +56,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         qs = qs.filter(deadline__lte=today) | qs.filter(status=Task.Status.DOING)
         serializer = self.get_serializer(qs.distinct(), many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"])
+    def reorder(self, request):
+        """Drag-and-drop reordering: the frontend sends the task list's new
+        full order as a list of ids, and each task's ``order`` becomes its
+        index in that list. Silently ignores any id that isn't a task this
+        user can see (e.g. stale client state)."""
+        ordered_ids = request.data.get("ordered_ids", [])
+        tasks_by_id = {t.id: t for t in self.get_queryset().filter(id__in=ordered_ids)}
+        updated = []
+        for index, task_id in enumerate(ordered_ids):
+            task = tasks_by_id.get(task_id)
+            if task is not None:
+                task.order = index
+                updated.append(task)
+        Task.objects.bulk_update(updated, ["order"])
+        return Response({"updated": len(updated)})

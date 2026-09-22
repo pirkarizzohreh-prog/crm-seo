@@ -136,12 +136,16 @@ class Task(models.Model):
         max_digits=14, decimal_places=2, null=True, blank=True
     )
 
+    # Manual drag-and-drop position within a project's task list — set only
+    # via TaskViewSet.reorder, not part of the normal create/edit form.
+    order = models.PositiveIntegerField(default=0)
+
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["deadline", "-priority"]
+        ordering = ["order", "deadline", "-priority"]
 
     def __str__(self) -> str:
         return self.title
