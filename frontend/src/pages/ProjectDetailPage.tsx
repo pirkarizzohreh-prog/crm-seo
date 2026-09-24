@@ -17,6 +17,7 @@ import { SearchConsolePanel } from '../components/SearchConsolePanel'
 import { SortableTaskRow } from '../components/SortableTaskRow'
 import { StatCard } from '../components/StatCard'
 import { Tabs } from '../components/Tabs'
+import { TaskArchivePanel } from '../components/TaskArchivePanel'
 import { TaskTimeEntriesModal } from '../components/TaskTimeEntriesModal'
 import { api } from '../lib/api'
 import { formatHours, formatToman } from '../lib/format'
@@ -32,7 +33,9 @@ export function ProjectDetailPage() {
   const queryClient = useQueryClient()
   const [editingTask, setEditingTask] = useState<TaskForm | null>(null)
   const [loggingHoursFor, setLoggingHoursFor] = useState<Task | null>(null)
-  const [tab, setTab] = useState<'tasks' | 'keywords' | 'report' | 'payments' | 'search-console'>('tasks')
+  const [tab, setTab] = useState<'tasks' | 'archive' | 'keywords' | 'report' | 'payments' | 'search-console'>(
+    'tasks',
+  )
   const [applyingTemplate, setApplyingTemplate] = useState(false)
   const [templateStartDate, setTemplateStartDate] = useState('')
   const [templateHoursPerDay, setTemplateHoursPerDay] = useState('3')
@@ -119,18 +122,22 @@ export function ProjectDetailPage() {
 
   const f = project.financials
   const taskList = tasks?.results ?? []
+  // Completed tasks move to the "بایگانی" tab instead of cluttering the
+  // active list — grouped there by the Jalali month they were finished in.
+  const activeTasks = taskList.filter((t) => t.status !== 'done')
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = taskList.findIndex((t) => t.id === active.id)
-    const newIndex = taskList.findIndex((t) => t.id === over.id)
+    const oldIndex = activeTasks.findIndex((t) => t.id === active.id)
+    const newIndex = activeTasks.findIndex((t) => t.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
-    const newOrder = arrayMove(taskList, oldIndex, newIndex)
+    const newActiveOrder = arrayMove(activeTasks, oldIndex, newIndex)
+    const doneTasks = taskList.filter((t) => t.status === 'done')
     queryClient.setQueryData<Paginated<Task>>(['tasks', { project: id }], (old) =>
-      old ? { ...old, results: newOrder } : old,
+      old ? { ...old, results: [...newActiveOrder, ...doneTasks] } : old,
     )
-    reorderTasks.mutate(newOrder.map((t) => t.id))
+    reorderTasks.mutate(newActiveOrder.map((t) => t.id))
   }
 
   return (
@@ -188,7 +195,8 @@ export function ProjectDetailPage() {
 
       <Tabs
         tabs={[
-          { key: 'tasks', label: `تسک‌ها (${taskList.length})` },
+          { key: 'tasks', label: `تسک‌ها (${activeTasks.length})` },
+          { key: 'archive', label: 'بایگانی' },
           { key: 'keywords', label: 'کلمات کلیدی' },
           { key: 'report', label: 'گزارش ماهانه' },
           { key: 'payments', label: 'دریافتی‌ها' },
@@ -201,13 +209,13 @@ export function ProjectDetailPage() {
       {tab === 'tasks' && <FormError error={startTimer.error} />}
 
       {tab === 'tasks' &&
-        (taskList.length === 0 ? (
-          <EmptyState icon={ClipboardList} title="هنوز تسکی برای این پروژه ثبت نشده است." />
+        (activeTasks.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="تسک فعالی برای این پروژه نیست — یا هنوز نساخته‌اید، یا همه در بایگانی‌اند." />
         ) : (
           <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={taskList.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={activeTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               <ul className="space-y-2">
-                {taskList.map((task) => (
+                {activeTasks.map((task) => (
                   <SortableTaskRow
                     key={task.id}
                     task={task}
@@ -227,6 +235,10 @@ export function ProjectDetailPage() {
             </SortableContext>
           </DndContext>
         ))}
+
+      {tab === 'archive' && (
+        <TaskArchivePanel tasks={taskList} onRestore={(taskId) => setStatus.mutate({ taskId, status: 'todo' })} />
+      )}
 
       {tab === 'keywords' && <KeywordsPanel projectId={Number(id)} />}
       {tab === 'report' && <MonthlyReportPanel projectId={Number(id)} />}
