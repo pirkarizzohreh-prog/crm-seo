@@ -75,6 +75,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 class CompletedTaskReportSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
+    description = serializers.CharField(allow_blank=True)
     category_name = serializers.CharField(allow_null=True)
     category_group = serializers.CharField(allow_null=True)
     completed_at = serializers.DateTimeField()

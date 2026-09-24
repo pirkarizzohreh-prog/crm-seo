@@ -164,6 +164,7 @@ def monthly_report(project: Project, jalali_year: int, jalali_month: int) -> dic
             {
                 "id": t.id,
                 "title": t.title,
+                "description": t.description,
                 "category_name": t.category.name if t.category else None,
                 "category_group": t.category.group if t.category else None,
                 "completed_at": t.completed_at,

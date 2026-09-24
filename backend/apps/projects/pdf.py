@@ -104,6 +104,13 @@ h2 {{
     padding: 5px 4px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 10pt;
+    vertical-align: top;
+}}
+.task-desc-line {{
+    margin-top: 3px;
+    margin-right: 18px;
+    font-size: 9pt;
+    color: #64748b;
 }}
 .hours-row td {{
     padding: 6px 4px;
@@ -124,14 +131,27 @@ h2 {{
 def render_monthly_report_pdf(report: dict) -> bytes:
     month_label = rtl(f"{report['period_start']:%Y-%m} تا {report['period_end']:%Y-%m-%d}")
 
-    rows_tasks = "".join(
-        f"<tr class='task-row'>"
-        f"<td>{rtl(t['title'])}</td>"
-        f"<td>{rtl(t['category_name'] or '—')}</td>"
-        f"<td>{_toman(t['value_generated']) if t['value_generated'] else '—'}</td>"
-        f"</tr>"
-        for t in report["completed_tasks"]
-    ) or f"<tr class='task-row'><td colspan='3'>{rtl('در این ماه تسکی تکمیل نشده است.')}</td></tr>"
+    def _description_lines_html(description: str) -> str:
+        # "عنوان تسک، بعد اینتر، با یک تب فاصله توضیحاتش به‌صورت لیست" — each
+        # non-empty line of the task's description becomes its own indented
+        # line under the title, dash-prefixed (xhtml2pdf's <ul>/list-style
+        # support is unreliable, so the dash is written into the text itself).
+        lines = [line.strip() for line in (description or "").splitlines() if line.strip()]
+        return "".join(f"<div class='task-desc-line'>{rtl('- ' + line)}</div>" for line in lines)
+
+    def _task_row(t: dict) -> str:
+        title_cell = rtl(t["title"]) + _description_lines_html(t.get("description", ""))
+        return (
+            "<tr class='task-row'>"
+            f"<td>{title_cell}</td>"
+            f"<td>{rtl(t['category_name'] or '—')}</td>"
+            f"<td>{_toman(t['value_generated']) if t['value_generated'] else '—'}</td>"
+            "</tr>"
+        )
+
+    rows_tasks = "".join(_task_row(t) for t in report["completed_tasks"]) or (
+        f"<tr class='task-row'><td colspan='3'>{rtl('در این ماه تسکی تکمیل نشده است.')}</td></tr>"
+    )
 
     rows_hours = "".join(
         f"<tr class='hours-row'><td>{rtl(row['category_name'])}</td>"

@@ -14,6 +14,7 @@ interface MonthlyReport {
   completed_tasks: {
     id: number
     title: string
+    description: string
     category_name: string | null
     completed_at: string
     value_generated: string | null
@@ -119,19 +120,32 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
                 <EmptyState icon={CheckCircle2} title="در این ماه تسکی تکمیل نشده است." />
               ) : (
                 <ul className="space-y-2">
-                  {data.completed_tasks.map((t) => (
-                    <li key={t.id} className="card flex items-center justify-between p-3 text-sm">
-                      <div>
-                        <div className="font-medium text-slate-900">{t.title}</div>
-                        {t.category_name && <div className="text-xs text-slate-500">{t.category_name}</div>}
-                      </div>
-                      {t.value_generated && (
-                        <div className="text-xs font-medium text-emerald-600">
-                          {formatToman(t.value_generated)}
+                  {data.completed_tasks.map((t) => {
+                    const descriptionLines = t.description
+                      .split('\n')
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+                    return (
+                      <li key={t.id} className="card flex items-start justify-between p-3 text-sm">
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900">{t.title}</div>
+                          {t.category_name && <div className="text-xs text-slate-500">{t.category_name}</div>}
+                          {descriptionLines.length > 0 && (
+                            <ul className="mt-1 me-4 space-y-0.5 text-xs text-slate-500">
+                              {descriptionLines.map((line, i) => (
+                                <li key={i}>- {line}</li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
-                      )}
-                    </li>
-                  ))}
+                        {t.value_generated && (
+                          <div className="shrink-0 text-xs font-medium text-emerald-600">
+                            {formatToman(t.value_generated)}
+                          </div>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
             </div>
