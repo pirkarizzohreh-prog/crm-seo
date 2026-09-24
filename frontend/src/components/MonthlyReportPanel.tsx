@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { CalendarRange, CheckCircle2, FileBarChart, FileDown, FileSpreadsheet, NotebookText } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { formatDate, formatHours, formatToman, gregorianMonthNames } from '../lib/format'
+import { formatDate, formatHours, formatToman } from '../lib/format'
+import { jalaliMonthNames, toJalali } from '../lib/jalali'
 import { EmptyState } from './Layout'
 import { StatCard } from './StatCard'
 
@@ -26,9 +27,11 @@ interface MonthlyReport {
 }
 
 export function MonthlyReportPanel({ projectId }: { projectId: number }) {
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  const todayJalali = toJalali(new Date())
+  // "year"/"month" here are Jalali — the backend's month_range() interprets
+  // them that way, matching the شمسی month names shown in the picker.
+  const [year, setYear] = useState(todayJalali.jy)
+  const [month, setMonth] = useState(todayJalali.jm)
   const [downloading, setDownloading] = useState(false)
   const [downloadingXlsx, setDownloadingXlsx] = useState(false)
 
@@ -77,7 +80,7 @@ export function MonthlyReportPanel({ projectId }: { projectId: number }) {
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
-                {gregorianMonthNames[m - 1]}
+                {jalaliMonthNames[m - 1]}
               </option>
             ))}
           </select>

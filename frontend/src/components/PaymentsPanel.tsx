@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Coins, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { formatDate, formatToman, gregorianMonthNames } from '../lib/format'
+import { formatDate, formatToman } from '../lib/format'
+import { jalaliMonthNames, toJalali } from '../lib/jalali'
 import { useMe } from '../lib/useMe'
 import type { Paginated, Payment, PaymentSummary } from '../types'
 import { EmptyState } from './Layout'
@@ -15,9 +16,11 @@ type PaymentForm = Partial<Payment>
 
 export function PaymentsPanel({ projectId }: { projectId: number }) {
   const queryClient = useQueryClient()
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  const todayJalali = toJalali(new Date())
+  // "year"/"month" here are Jalali — the backend's month_range() interprets
+  // them that way, matching the شمسی month names shown in the picker.
+  const [year, setYear] = useState(todayJalali.jy)
+  const [month, setMonth] = useState(todayJalali.jm)
   const [editing, setEditing] = useState<PaymentForm | null>(null)
   const { data: me } = useMe()
   const canEdit = me?.is_owner ?? false
@@ -66,7 +69,7 @@ export function PaymentsPanel({ projectId }: { projectId: number }) {
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="field-input w-auto">
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>
-                {gregorianMonthNames[m - 1]}
+                {jalaliMonthNames[m - 1]}
               </option>
             ))}
           </select>

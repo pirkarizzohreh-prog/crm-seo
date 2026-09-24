@@ -7,12 +7,12 @@ how many hours the strategist estimates the work actually needs, and how
 many hours were actually logged.
 """
 
-from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
+import jdatetime
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -22,13 +22,23 @@ from .models import Payment, Project
 
 
 def current_month_range(today: Optional[date] = None) -> tuple[date, date]:
+    """The current *Jalali* month's boundaries, as Gregorian dates — every
+    other date in this app is Jalali, so "this month" for a "ساعت
+    ثبت‌شده این ماه"-style figure has to mean the Jalali month, not the
+    Gregorian calendar month (which would straddle two Jalali months for
+    most of its length)."""
     today = today or timezone.localdate()
-    return month_range(today.year, today.month)
+    j_today = jdatetime.date.fromgregorian(date=today)
+    return month_range(j_today.year, j_today.month)
 
 
-def month_range(year: int, month: int) -> tuple[date, date]:
-    last_day = monthrange(year, month)[1]
-    return date(year, month, 1), date(year, month, last_day)
+def month_range(jalali_year: int, jalali_month: int) -> tuple[date, date]:
+    """Gregorian [start, end] for a given Jalali year/month — ``jalali_year``
+    and ``jalali_month`` are Shamsi (e.g. 1405, 7 for مهر), not Gregorian."""
+    start = jdatetime.date(jalali_year, jalali_month, 1).togregorian()
+    next_month, next_year = (1, jalali_year + 1) if jalali_month == 12 else (jalali_month + 1, jalali_year)
+    end = jdatetime.date(next_year, next_month, 1).togregorian() - timedelta(days=1)
+    return start, end
 
 
 def logged_hours_for_project(
@@ -116,10 +126,10 @@ def project_financials(
 # time logged in the period, instead of the strategist writing it by hand.
 
 
-def monthly_report(project: Project, year: int, month: int) -> dict:
+def monthly_report(project: Project, jalali_year: int, jalali_month: int) -> dict:
     from apps.tasks.models import Task
 
-    start, end = month_range(year, month)
+    start, end = month_range(jalali_year, jalali_month)
 
     completed_tasks = (
         Task.objects.filter(
@@ -232,12 +242,14 @@ def project_delivery_status(project: Project) -> dict:
 # --- Payments (expected vs. actually received) ---------------------------
 
 
-def payment_summary(project: Project, year: int | None = None, month: int | None = None) -> dict:
+def payment_summary(
+    project: Project, jalali_year: int | None = None, jalali_month: int | None = None
+) -> dict:
     """"چه مبلغی قرار بوده بدست بیارم" vs "چقدر و کِی واقعاً گرفتم" — the two
     "expected" figures already tracked elsewhere (the flat contract amount,
     and hours worked × target rate) next to what was actually logged as
-    received, for a given month and all-time."""
-    start, end = month_range(year, month) if year and month else current_month_range()
+    received, for a given (Jalali) month and all-time."""
+    start, end = month_range(jalali_year, jalali_month) if jalali_year and jalali_month else current_month_range()
 
     financials = project_financials(project, start, end)
     period_received = (

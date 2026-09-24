@@ -1,3 +1,4 @@
+import jdatetime
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import viewsets
@@ -104,9 +105,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Response(TaskSerializer(created, many=True).data, status=201)
 
     def _report_for_request(self, request, project):
-        today = timezone.localdate()
-        year = int(request.query_params.get("year", today.year))
-        month = int(request.query_params.get("month", today.month))
+        # "year"/"month" here are Jalali (the picker shows شمسی months, and
+        # every other date in this app is Jalali) — default to the current
+        # Jalali month, not the Gregorian one.
+        j_today = jdatetime.date.fromgregorian(date=timezone.localdate())
+        year = int(request.query_params.get("year", j_today.year))
+        month = int(request.query_params.get("month", j_today.month))
         return monthly_report(project, year, month)
 
     @action(detail=True, methods=["get"], url_path="monthly-report")
@@ -149,9 +153,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """چه مبلغی قرار بوده بدست بیارم (قرارداد/ساعتی) در برابر چقدر
         واقعاً دریافت شده — برای ماه انتخاب‌شده و مجموع کل عمر پروژه."""
         project = self.get_object()
-        today = timezone.localdate()
-        year = int(request.query_params.get("year", today.year))
-        month = int(request.query_params.get("month", today.month))
+        j_today = jdatetime.date.fromgregorian(date=timezone.localdate())
+        year = int(request.query_params.get("year", j_today.year))
+        month = int(request.query_params.get("month", j_today.month))
         data = payment_summary(project, year, month)
         return Response(PaymentSummarySerializer(data).data)
 
