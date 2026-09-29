@@ -320,6 +320,17 @@ export function ProjectDetailPage() {
                 />
               </div>
             </div>
+            {editingTask.status === 'done' && (
+              <div>
+                <label className="field-label">تاریخ تکمیل (تعیین‌کننده ماه بایگانی)</label>
+                <JalaliDateInput
+                  value={editingTask.completed_at?.slice(0, 10)}
+                  onChange={(iso) => setEditingTask({ ...editingTask, completed_at: iso || null })}
+                  required
+                  clearable={false}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="field-label">تکرار</label>

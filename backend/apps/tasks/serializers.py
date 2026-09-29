@@ -50,6 +50,14 @@ class TaskSerializer(serializers.ModelSerializer):
     actual_hours = serializers.SerializerMethodField()
     project_name = serializers.CharField(source="project.name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True, default=None)
+    # Editable (not auto-only) so a mis-filed task can be moved to the right
+    # month in the archive (see TaskArchivePanel, which groups by this
+    # field) — e.g. backfilling work that was actually finished last month.
+    # Accepts a plain "YYYY-MM-DD" from the Jalali date picker in addition
+    # to full datetimes.
+    completed_at = serializers.DateTimeField(
+        required=False, allow_null=True, input_formats=["%Y-%m-%d", "iso-8601"]
+    )
 
     class Meta:
         model = Task
@@ -76,7 +84,7 @@ class TaskSerializer(serializers.ModelSerializer):
         )
         # order is only ever changed via TaskViewSet.reorder (drag-and-drop),
         # not through the normal create/edit form.
-        read_only_fields = ("id", "order", "completed_at", "created_at", "updated_at")
+        read_only_fields = ("id", "order", "created_at", "updated_at")
 
     def get_actual_hours(self, obj):
         return getattr(obj, "actual_hours", None) or 0
